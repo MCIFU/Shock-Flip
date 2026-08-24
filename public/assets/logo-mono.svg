@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <filter id="monoS">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.2"/>
+    </filter>
+  </defs>
+
+  <circle cx="100" cy="100" r="95" fill="none" stroke="currentColor" stroke-width="10" filter="url(#monoS)"/>
+  <path d="M 110 19 L 73 97 L 103 101 L 67 181 L 133 107 L 100 103 Z" fill="currentColor"/>
+</svg>

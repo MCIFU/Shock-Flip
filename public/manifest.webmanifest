@@ -1,0 +1,16 @@
+{
+  "name": "Shock Flip",
+  "short_name": "ShockFlip",
+  "description": "Puzzle arcade: descubre multiplicadores sin tocar núcleos eléctricos",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#14100c",
+  "background_color": "#14100c",
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "assets/icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png" }
+  ]
+}
