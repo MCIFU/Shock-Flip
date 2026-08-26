@@ -5,14 +5,14 @@ import * as Particles from './particles.js';
 import * as Haptic from './haptic.js';
 import { celebrateTrophy, purchaseMedal } from './rarity.js';
 import {
-  KEYS, LEVELS, SHIELD_COST, SHIELDS_PER_FREE, multiColor, DEFAULT_COLLECTION, DEFAULT_STATS,
-  BOARD_SIZES, DEFAULT_BOARD_SIZE, CARD_BACK_PATTERNS, DEFAULT_CARD_BACK,
+  KEYS, LEVELS, SHIELD_COST, SHIELDS_PER_FREE, DEFAULT_COLLECTION, DEFAULT_STATS,
+  BOARD_SIZES, DEFAULT_BOARD_SIZE,
 } from './config.js';
 import {
   loadCoins, saveCoins, loadCollection, saveCollection,
   loadStats, saveStats, loadSound, saveSound, loadHaptics, saveHaptics, loadMusic, saveMusic, loadMusicOn, saveMusicOn,
   loadTheme, saveTheme,
-  checkTrophies, ShieldManager, THEMES, SKINS, MEDALS, getTitle, isUnlocked,
+  checkTrophies, ShieldManager, THEMES, SKINS, MEDALS, isUnlocked,
   TROPHIES, TROPHY_TIERS,
 } from './collection.js';
 
@@ -23,7 +23,9 @@ let state = {
   revealed: [],          // 25 booleans
   hints: { rows: [], cols: [] },
   level: 1,              // pantalla actual (1-8)
-  runCoins: 0,           // monedas de la racha actual
+  runCoins: 0,           // monedas acumuladas de la partida actual
+  screenCoins: 0,        // monedas potenciales de la pantalla actual
+  runStreak: 0,          // pantallas ganadas seguidas en la partida actual
   score: 0,              // multiplicador actual
   target: 0,             // cuántos multiplicadores hay que revelar
   found: 0,              // cuántos se han revelado
@@ -46,6 +48,8 @@ let state = {
   rendirseStage: 0,      // 0=nada, 1=confirmar, 2=listo para cobrar
   salirStage: 0,
   boardSize: DEFAULT_BOARD_SIZE,
+  defeatPending: false,  // tablero de derrota visible antes de la notificación
+  defeatTimer: null,
 };
 
 let dom = {};
@@ -63,6 +67,7 @@ export function init() {
     hudBank: document.getElementById('hud-bank'),
     hudRun: document.getElementById('hud-run'),
     hudMult: document.getElementById('hud-mult'),
+    hudStreak: document.getElementById('hud-streak'),
     boardArea: document.getElementById('board-area'),
     statusBar: document.getElementById('status-bar'),
     btnMemo: document.getElementById('btn-memo'),
@@ -89,7 +94,7 @@ export function init() {
     workshopBack: document.getElementById('workshop-back'),
     howtoplayContent: document.getElementById('howtoplay'),
     bankWelcome: document.getElementById('bank-welcome'),
-    rankWelcome: document.getElementById('rank-welcome'),
+    trophiesWelcome: document.getElementById('trophies-welcome'),
     statsOverlay: document.getElementById('stats-overlay'),
     statsBody: document.getElementById('stats-body'),
     statsClose: document.getElementById('stats-close'),
@@ -107,10 +112,8 @@ export function init() {
   state.darkTheme = resolveTheme(state.themeMode);
   bindSystemTheme();
   state.boardSize = state.collection.boardSize || DEFAULT_BOARD_SIZE;
-  state.cardBack = state.collection.cardBack || DEFAULT_CARD_BACK;
   Logic.setGridSize(state.boardSize);
   applyThemeDOM();
-  applyCardBack(state.cardBack);
   state.musicOn = loadMusicOn();
   applyThemeDOM();
   Audio.initAudio();
@@ -233,15 +236,33 @@ function showScreen(name) {
 
 // ─── HUD ───
 function updateHUD() {
-  const title = getTitle(state.bankCoins);
   if (dom.hudLevel) dom.hudLevel.textContent = state.level;
-  if (dom.hudBank) dom.hudBank.textContent = `${state.bankCoins} (${title})`;
-  if (dom.hudRun) dom.hudRun.textContent = state.runCoins;
+  if (dom.hudBank) dom.hudBank.textContent = state.bankCoins;
+  // Monedas de la partida + multiplicador de racha aplicado a la pantalla actual
+  if (dom.hudRun) dom.hudRun.textContent = state.runCoins + state.screenCoins;
+  if (dom.hudStreak) {
+    const mult = Logic.streakMultiplier(state.runStreak + 1);
+    dom.hudStreak.textContent = state.runStreak >= 1 ? `RACHA ×${mult.toFixed(2)}` : 'RACHA —';
+    dom.hudStreak.classList.toggle('streak-active', state.runStreak >= 1);
+  }
   if (dom.hudMult) dom.hudMult.textContent = state.score > 0 ? `×${state.score}` : '—';
   if (dom.bankWelcome) dom.bankWelcome.textContent = state.bankCoins;
-  if (dom.rankWelcome) dom.rankWelcome.textContent = title;
+  updateWelcomeTrophies();
   updateSoundBtn();
   updateShieldBtn();
+}
+
+// Desglose de trofeos por rareza en la bienvenida
+function updateWelcomeTrophies() {
+  if (!dom.trophiesWelcome) return;
+  const earned = (state.collection && state.collection.trophies) || [];
+  dom.trophiesWelcome.innerHTML = Object.entries(TROPHY_TIERS).map(([id, tier]) => {
+    const tierTotal = TROPHIES.filter(t => t.tier === id).length;
+    const tierEarned = TROPHIES.filter(t => t.tier === id && earned.includes(t.id)).length;
+    return `<span class="trophies-breakdown-chip tier-${id}" title="${tier.label}">
+      ${tier.icon} <span class="bd-count">${tierEarned}/${tierTotal}</span>
+    </span>`;
+  }).join('');
 }
 
 function updateSoundBtn() {
@@ -267,11 +288,23 @@ function updateShieldBtn() {
   if (!dom.btnShield) return;
   const shields = state.collection?.shields || 0;
   const armed = state.shieldMgr?.armed;
-  dom.btnShield.textContent = `🛡️ AISLANTE (${shields})`;
   dom.btnShield.className = 'btn shield-btn';
-  if (shields <= 0 && !armed) dom.btnShield.classList.add('shield-empty');
-  else if (!armed) dom.btnShield.classList.add('shield-pulse');
-  else dom.btnShield.classList.add('shield-armed');
+  if (shields <= 0 && !armed) {
+    // Sin seguros: gris apagado, deshabilitado
+    dom.btnShield.classList.add('shield-empty');
+    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>AISLANTE</span><span class="shield-count">0</span>`;
+    dom.btnShield.title = 'Sin seguros. Compra en el Taller o gana 3 pantallas.';
+  } else if (!armed) {
+    // Con seguros, sin armar: ámbar pulsante + badge LISTO
+    dom.btnShield.classList.add('shield-pulse');
+    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>AISLANTE</span><span class="shield-count">${shields}</span><span class="shield-badge badge-ready">LISTO</span>`;
+    dom.btnShield.title = `Tienes ${shields} seguro${shields > 1 ? 's' : ''}. Toca para armar y neutralizar la próxima descarga.`;
+  } else {
+    // Armado: cian brillante fijo + badge ACTIVO
+    dom.btnShield.classList.add('shield-armed');
+    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>AISLANTE</span><span class="shield-count">${shields}</span><span class="shield-badge badge-on">ACTIVO</span>`;
+    dom.btnShield.title = 'Seguro ARMADO: la próxima descarga será neutralizada. Toca para desarmar.';
+  }
 }
 
 function toggleShield() {
@@ -287,13 +320,19 @@ function toggleShield() {
     Audio.sfx('deny');
   }
   updateShieldBtn();
+  updateStatusBar();
 }
 
 // ─── Iniciar partida ───
 function startGame() {
   stopFuseSparks();
+  clearTimeout(state.defeatTimer);
+  state.defeatPending = false;
+  dom.boardArea?.classList.remove('board-locked');
   state.level = 1;
   state.runCoins = 0;
+  state.screenCoins = 0;
+  state.runStreak = 0;
   state.score = 0;
   state.shieldMgr.armed = false;
   state.rendirseStage = 0;
@@ -319,6 +358,7 @@ function generateScreen() {
   state.target = Logic.countMultipliers(board);
   state.found = 0;
   state.score = 0;
+  state.screenCoins = 0; // pantalla nueva: sin monedas potenciales (evita doble conteo del HUD tras SIGUIENTE)
   state.usedShieldThisScreen = false;
   state.revealedOnesThisScreen = false;
   state.startValue = 0;
@@ -352,7 +392,7 @@ function renderBoard() {
     const hint = state.hints.cols[c];
     const el = document.createElement('div');
     el.className = 'board-hint col-hint';
-    el.innerHTML = `<span class="hint-multi" style="color:${multiColor(hint.multi)}">×${hint.multi}</span><span class="hint-bombs">⚡${hint.bombs}</span>`;
+    el.innerHTML = `<span class="hint-multi">×${hint.multi}</span><span class="hint-bombs">⚡${hint.bombs}</span>`;
     el.addEventListener('click', () => highlightColumn(c));
     hintLineStyle(el, c, 'col');
     area.appendChild(el);
@@ -363,7 +403,7 @@ function renderBoard() {
     const hint = state.hints.rows[r];
     const rowHint = document.createElement('div');
     rowHint.className = 'board-hint row-hint';
-    rowHint.innerHTML = `<span class="hint-multi" style="color:${multiColor(hint.multi)}">×${hint.multi}</span><span class="hint-bombs">⚡${hint.bombs}</span>`;
+    rowHint.innerHTML = `<span class="hint-multi">×${hint.multi}</span><span class="hint-bombs">⚡${hint.bombs}</span>`;
     rowHint.addEventListener('click', () => highlightRow(r));
     hintLineStyle(rowHint, r, 'row');
     area.appendChild(rowHint);
@@ -446,7 +486,7 @@ function hintLineStyle(el, idx, type) {
 }
 
 // SVG compacto de núcleo eléctrico para la marca de MEMO (sin IDs para evitar colisiones)
-const svg_mark_shock = `<svg class="mark-shock-icon" viewBox="0 0 24 24" width="15" height="15" fill="none"><circle cx="12" cy="13" r="8.5" fill="#5a4a00" stroke="#fff200" stroke-width="1"/><path d="M12 5.5 L10 10 L12 11 L9 14.5 L13.5 8.5 L11.5 9.5 L13 5.5Z" fill="#fff200"/><circle cx="12" cy="13" r="2" fill="#fff" opacity="0.2"/><rect x="11" y="3" width="2" height="3" rx="0.5" fill="#aaa"/><circle cx="12" cy="3" r="2" fill="#ccc"/></svg>`;
+const svg_mark_shock = `<svg class="mark-shock-icon" viewBox="0 0 24 24" width="15" height="15" fill="none"><path d="M12.9 1.8 L8.3 11.5 L12 12.5 L7.8 22.2 L16.2 12 L12 11.1 Z" fill="#fff200" stroke="#8a6500" stroke-width="0.6" stroke-linejoin="round"/></svg>`;
 
 function marksHTML(mark) {
   const marks = [];
@@ -460,6 +500,7 @@ function marksHTML(mark) {
 // ─── Interacción con casillas ───
 function handleCellClick(idx, e) {
   if (state.revealed[idx]) return;
+  if (state.defeatPending) return; // bloqueado mientras se muestra el tablero de derrota
 
   // Flash visual de presión
   const cellEl = dom.boardArea?.querySelector(`[data-idx="${idx}"]`);
@@ -519,6 +560,7 @@ function reveal(idx) {
       patchCellDOM(idx, val, cellEl);
       refreshHints();
       updateShieldBtn();
+      updateStatusBar();
     } else {
       Audio.sfx('bomb');
       Particles.explodeBomb(cx, cy);
@@ -527,15 +569,29 @@ function reveal(idx) {
       state.stats.gamesPlayed = Math.max(state.stats.gamesPlayed, 1);
       state.stats.streak = 0;
       state.runCoins = 0;
+      state.screenCoins = 0;
+      state.runStreak = 0;
+      // Computar casillas destapadas ANTES de revelar todo (regla de retroceso de nivel)
+      const revealedCount = state.revealed.filter(Boolean).length;
+      // Revelar todo el tablero para mostrar dónde estaban los shocks
+      for (let i = 0; i < state.board.length; i++) state.revealed[i] = true;
       saveStats(state.stats);
       saveCollection(state.collection);
       // Full re-render to show bomb state
       renderBoard();
-      const revealedCount = state.revealed.filter(Boolean).length;
       if (revealedCount < state.level) {
         state.level = Math.max(1, revealedCount);
       }
-      showOverlayDefeat();
+      // Mostrar primero el tablero completo (dónde estaban los shocks)
+      // y después la notificación de derrota.
+      state.defeatPending = true;
+      dom.boardArea?.classList.add('board-locked');
+      clearTimeout(state.defeatTimer);
+      state.defeatTimer = setTimeout(() => {
+        state.defeatPending = false;
+        dom.boardArea?.classList.remove('board-locked');
+        showOverlayDefeat();
+      }, 1300);
       return;
     }
   } else {
@@ -550,7 +606,12 @@ function reveal(idx) {
     } else {
       state.score = Logic.applyScore(state.score, val);
     }
-    state.runCoins = Logic.coinsForScreen(state.level, state.score);
+    // Monedas potenciales de la pantalla actual, con multiplicador por racha
+    // y penalización anti-farming si la pantalla está por debajo del mejor nivel.
+    state.screenCoins = Logic.coinsForScreen(
+      state.level, state.score, state.runStreak + 1,
+      state.stats?.bestLevel || 1
+    );
 
     if (val === 1) {
       state.revealedOnesThisScreen = true;
@@ -634,6 +695,8 @@ function handleWin() {
   Audio.sfx('win');
   Particles.confetti(window.innerWidth / 2, window.innerHeight / 2);
   state.hasWonScreen = true;
+  state.runStreak++;
+  state.runCoins += state.screenCoins; // acumular las monedas de esta pantalla en la partida
   state.stats.screensWon++;
   state.stats.streak++;
   if (state.stats.streak > state.stats.bestStreak) state.stats.bestStreak = state.stats.streak;
@@ -660,11 +723,10 @@ function handleWin() {
 
   if (state.level >= 8) {
     // Victoria final
-    state.bankCoins += state.runCoins;
+    const finalEarned = Logic.cashOutEarned(state);
     saveCoins(state.bankCoins);
-    state.runCoins = 0;
     saveCollection(state.collection);
-    showOverlayFinal();
+    showOverlayFinal(finalEarned);
   } else {
     showOverlayWin();
   }
@@ -705,15 +767,26 @@ function showNextTrophy() {
 // ─── Overlays ───
 function showOverlayWin() {
   dom.overlayTitle.textContent = `¡PANTALLA ${state.level} SUPERADA!`;
+  const streakMult = Logic.streakMultiplier(state.runStreak);
+  const streakLine = state.runStreak >= 2
+    ? `<div class="overlay-streak">🔥 RACHA ×${streakMult.toFixed(2)} · ${state.runStreak} seguidas</div>`
+    : '';
+  const farmLine = state.stats?.bestLevel > state.level
+    ? `<div class="overlay-farm">⬇ Pantalla repetida (mejor: ${state.stats.bestLevel})</div>`
+    : '';
   dom.overlayBody.innerHTML = `
-    <div class="overlay-coins">+${state.runCoins} 💰</div>
+    <div class="overlay-win-bolt">${svg_shock_icon}</div>
+    <div class="overlay-coins">+${state.screenCoins} 💰</div>
     <div class="overlay-mult">Multi ×${state.score}</div>
-    <p style="color:#bfb3a0;text-align:center">Monedas en juego: ${state.runCoins}</p>`;
+    ${streakLine}
+    ${farmLine}
+    <p class="overlay-note">En juego (racha incluida): ${state.runCoins}</p>`;
   dom.overlayBtn1.textContent = 'COBRAR';
   dom.overlayBtn1.className = 'btn primary';
   dom.overlayBtn2.textContent = 'SIGUIENTE';
   dom.overlayBtn2.className = 'btn gold';
   dom.overlay.dataset.action = 'win';
+  dom.overlay.querySelector('.overlay-card')?.classList.remove('defeat');
   dom.overlay.classList.remove('hidden');
   dom.flash.classList.add('active');
   Haptic.doublePulse();
@@ -721,45 +794,45 @@ function showOverlayWin() {
 }
 
 function showOverlayDefeat() {
-  dom.overlayTitle.textContent = '¡SHOCK! ⚡';
+  dom.overlayTitle.textContent = '¡SHOCK!';
   dom.overlayBody.innerHTML = `
-    <div class="overlay-shock">⚡ ¡SHOCK!</div>
-    <p style="color:#bfb3a0;text-align:center">Las monedas de esta partida se pierden.</p>
-    <p style="color:#bfb3a0;text-align:center">El banco está a salvo.</p>`;
+    <div class="overlay-shock">${svg_shock_icon}</div>
+    <p class="overlay-note">Las monedas de esta partida se pierden.</p>
+    <p class="overlay-note">El banco está a salvo.</p>`;
   dom.overlayBtn1.textContent = 'MENÚ';
   dom.overlayBtn1.className = 'btn';
   dom.overlayBtn2.textContent = 'REINTENTAR';
   dom.overlayBtn2.className = 'btn primary';
   dom.overlay.dataset.action = 'defeat';
+  dom.overlay.querySelector('.overlay-card')?.classList.add('defeat');
   dom.overlay.classList.remove('hidden');
 }
 
-function showOverlayFinal() {
+function showOverlayFinal(earned) {
   dom.overlayTitle.textContent = '🏆 ¡VICTORIA FINAL! 🏆';
   dom.overlayBody.innerHTML = `
-    <div class="overlay-coins">+${state.runCoins} 💰 al banco</div>
-    <p style="color:#ecc986;text-align:center;font-size:1.2em">¡Has completado todas las pantallas!</p>
-    <p style="color:#bfb3a0;text-align:center">Rango: ${getTitle(state.bankCoins)}</p>`;
+    <div class="overlay-coins">+${earned} 💰 al banco</div>
+    <p style="color:#ecc986;text-align:center;font-size:1.2em">¡Has completado todas las pantallas!</p>`;
   dom.overlayBtn1.textContent = 'TALLER';
   dom.overlayBtn1.className = 'btn';
   dom.overlayBtn2.textContent = 'MENÚ';
   dom.overlayBtn2.className = 'btn primary';
   dom.overlay.dataset.action = 'final';
+  dom.overlay.querySelector('.overlay-card')?.classList.remove('defeat');
   dom.overlay.classList.remove('hidden');
   dom.flash.classList.add('active');
   setTimeout(() => dom.flash.classList.remove('active'), 800);
 }
 
-function showOverlayCashout() {
+function showOverlayCashout(earned) {
   dom.overlayTitle.textContent = '💸 ¡COBRADO!';
-  dom.overlayBody.innerHTML = `
-    <div class="overlay-coins">+${state.runCoins} 💰 al banco</div>
-    <p style="color:#bfb3a0;text-align:center">Banco: ${state.bankCoins}</p>`;
+  dom.overlayBody.innerHTML = Logic.cashoutOverlayHTML(earned, state.bankCoins);
   dom.overlayBtn1.textContent = '';
   dom.overlayBtn1.className = 'btn hidden-btn';
   dom.overlayBtn2.textContent = 'AL MENÚ';
   dom.overlayBtn2.className = 'btn primary';
   dom.overlay.dataset.action = 'cashout';
+  dom.overlay.querySelector('.overlay-card')?.classList.remove('defeat');
   dom.overlay.classList.remove('hidden');
   dom.flash.classList.add('active');
   setTimeout(() => dom.flash.classList.remove('active'), 600);
@@ -807,17 +880,18 @@ function nextScreen() {
 
 function cashOut() {
   Audio.sfx('cash');
-  const earned = state.runCoins;
-  state.bankCoins += earned;
+  const earned = Logic.cashOutEarned(state);
   if (earned >= 100) state.stats.rendirseOver100 = true;
   state.stats.totalRendirse++;
   state.stats.totalCoinsEarned += earned;
   state.runCoins = 0;
+  state.screenCoins = 0;
+  state.runStreak = 0;
   saveCoins(state.bankCoins);
   saveStats(state.stats);
   saveCollection(state.collection);
   Particles.confetti(window.innerWidth / 2, window.innerHeight / 2);
-  showOverlayCashout();
+  showOverlayCashout(earned);
 }
 
 function rendirse() {
@@ -850,9 +924,12 @@ function updateRendirseBtn() {
   }
 }
 
-// Botón REINICIAR
+// Botón REINICIAR — regenera la pantalla actual, manteniendo el run acumulado
 function reiniciar() {
-  state.runCoins = 0;
+  clearTimeout(state.defeatTimer);
+  state.defeatPending = false;
+  dom.boardArea?.classList.remove('board-locked');
+  state.screenCoins = 0;
   state.score = 0;
   state.shieldMgr.armed = false;
   state.rendirseStage = 0;
@@ -876,7 +953,12 @@ function salir() {
       }
     }, 3000);
   } else if (state.salirStage >= 2) {
+    clearTimeout(state.defeatTimer);
+    state.defeatPending = false;
+    dom.boardArea?.classList.remove('board-locked');
     state.runCoins = 0;
+    state.screenCoins = 0;
+    state.runStreak = 0;
     state.salirStage = 0;
     showScreen('welcome');
   }
@@ -976,9 +1058,14 @@ function updateStatusBar() {
   const remaining = state.target - state.found;
   if (state.memoMode) {
     dom.statusBar.textContent = `✎ MEMO activo: toca para marcar 💣 → 1 → 2 → 3 → limpiar · Quedan ${remaining}`;
+  } else if (state.shieldMgr?.armed) {
+    dom.statusBar.textContent = `🛡️ AISLANTE ARMADO: la próxima descarga se neutraliza · Quedan ${remaining}`;
+    dom.statusBar.classList.add('status-shield-armed');
+    return;
   } else {
     dom.statusBar.textContent = `Revela los multiplicadores · Quedan ${remaining}`;
   }
+  dom.statusBar.classList.remove('status-shield-armed');
 }
 
 // ─── Highlight row/column ───
@@ -1107,7 +1194,7 @@ function renderWorkshop() {
   if (!dom.workshopContent) return;
   state.bankCoins = loadCoins();
   state.collection = loadCollection();
-  if (dom.workshopBank) dom.workshopBank.innerHTML = `<span class="coins-icon">🪙</span> ${state.bankCoins} <span class="coins-rank">${getTitle(state.bankCoins)}</span>`;
+  if (dom.workshopBank) dom.workshopBank.innerHTML = `<span class="coins-icon">🪙</span> ${state.bankCoins}`;
   if (dom.workshopTitle) dom.workshopTitle.textContent = 'TALLER';
 
   const themeId = state.collection.theme || 'taller';
@@ -1160,17 +1247,6 @@ function renderWorkshop() {
   }
   sections.push(`</div>`);
 
-  // 7.3b Patrón del dorso
-  const currentBack = state.cardBack || DEFAULT_CARD_BACK;
-  sections.push(`<div class="shop-section"><h3>🀄 Patrón del dorso</h3>`);
-  for (const p of CARD_BACK_PATTERNS) {
-    const equipped = currentBack === p.id;
-    sections.push(`<button class="shop-btn ${equipped ? 'equipped' : ''}" data-action="card-back" data-id="${p.id}">
-      ${equipped ? '✓ ' : ''}${p.icon} ${p.name}
-    </button>`);
-  }
-  sections.push(`<p class="shop-hint">Cambia el dibujo decorativo del dorso de las cartas ocultas.</p></div>`);
-
   // 7.4 Tamaño de tablero
   const currentSize = state.boardSize || DEFAULT_BOARD_SIZE;
   sections.push(`<div class="shop-section"><h3>📐 Tamaño de tablero</h3>`);
@@ -1190,6 +1266,25 @@ function renderWorkshop() {
 
   // 7.5 Medallas de vitrina
   sections.push(`<div class="shop-section"><h3>🏅 Medallas de vitrina</h3>`);
+  // Barra de progreso hacia la siguiente medalla comprable
+  const ownedMedals = state.collection.owned || [];
+  const nextMedal = MEDALS.find(m => !ownedMedals.includes(m.id));
+  if (nextMedal) {
+    const pct = Math.max(0, Math.min(100, Math.round((state.bankCoins / nextMedal.cost) * 100)));
+    const tier = TROPHY_TIERS[nextMedal.tier] || TROPHY_TIERS.bronze;
+    const missing = Math.max(0, nextMedal.cost - state.bankCoins);
+    sections.push(`
+      <div class="medal-progress">
+        <div class="medal-progress-head">
+          <span class="medal-progress-label">Próxima: ${nextMedal.emoji} ${nextMedal.name}</span>
+          <span class="medal-progress-cost">${state.bankCoins} / ${nextMedal.cost} 🪙</span>
+        </div>
+        <div class="medal-progress-bar"><div class="medal-progress-fill tier-${nextMedal.tier}" style="width:${pct}%"></div></div>
+        <p class="shop-hint">${pct >= 100 ? `¡Ya puedes comprar la ${nextMedal.name.toLowerCase()}!` : `Te faltan ${missing} 🪙 para desbloquear la siguiente medalla.`}</p>
+      </div>`);
+  } else {
+    sections.push(`<p class="shop-hint">🎉 ¡Has conseguido todas las medallas!</p>`);
+  }
   for (const m of MEDALS) {
     const owned = state.collection.owned && state.collection.owned.includes(m.id);
     const canBuy = state.bankCoins >= m.cost && !owned;
@@ -1251,14 +1346,6 @@ function renderWorkshop() {
           state.boardSize = parseInt(id);
           state.collection.boardSize = state.boardSize;
           Logic.setGridSize(state.boardSize);
-          saveCollection(state.collection);
-          Audio.sfx('equip');
-          renderWorkshop();
-          break;
-        case 'card-back':
-          state.cardBack = id;
-          state.collection.cardBack = id;
-          applyCardBack(id);
           saveCollection(state.collection);
           Audio.sfx('equip');
           renderWorkshop();
@@ -1396,10 +1483,6 @@ function applySkin(id) {
   }
 }
 
-function applyCardBack(id) {
-  document.documentElement.setAttribute('data-back-pattern', id || DEFAULT_CARD_BACK);
-}
-
 // ─── Stats overlay ───
 function statsSettingsRow() {
   const ss = state.soundOn ? 'on' : 'off';
@@ -1423,7 +1506,6 @@ function showStats() {
   const trophies = state.collection.trophies || [];
   const medals = state.collection.owned || [];
   const coins = loadCoins();
-  const title = getTitle(coins);
 
   const items = [
     { label: 'Pantallas ganadas', value: s.screensWon, cls: '' },
@@ -1437,7 +1519,6 @@ function showStats() {
     { label: 'Monedas ganadas', value: s.totalCoinsEarned, cls: '' },
     { label: 'Multi récord', value: s.highestMulti > 0 ? `×${s.highestMulti}` : '—', cls: 'amber' },
     { label: 'Banco actual', value: coins, cls: '' },
-    { label: 'Rango', value: title, cls: 'dim' },
     { label: 'Trofeos', value: `${trophies.length}/${TROPHIES.length}`, cls: 'amber' },
     { label: 'Medallas', value: `${medals.length}/7`, cls: '' },
   ];
@@ -1455,7 +1536,7 @@ function hideStats() {
 }
 
 // ─── SVG icons inline ───
-const svg_shock_icon = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none"><defs><radialGradient id="sc" cx="50%" cy="45%"><stop offset="0%" stop-color="#fffbe6"/><stop offset="30%" stop-color="#fff200"/><stop offset="70%" stop-color="#e6c200"/><stop offset="100%" stop-color="#8a6500"/></radialGradient></defs><circle cx="12" cy="13" r="9.5" fill="url(#sc)" stroke="#fffbe6" stroke-width="0.8"/><path d="M12 4.5 L10 10 L12 11 L9 15 L14 9 L11 8 L13 4.5Z" fill="#3a2a00" opacity="0.8"/><circle cx="12" cy="13" r="3.5" fill="#fff" opacity="0.15"/><rect x="11" y="2" width="2" height="3" rx="0.5" fill="#aaa"/><circle cx="12" cy="2" r="2.5" fill="#ccc" stroke="#999" stroke-width="0.5"/></svg>`;
+const svg_shock_icon = `<svg viewBox="0 0 24 24" width="20" height="20" fill="none"><defs><linearGradient id="sfb" x1="0.5" y1="0" x2="0.5" y2="1"><stop offset="0%" stop-color="#FFFBEA"/><stop offset="30%" stop-color="#FFD700"/><stop offset="70%" stop-color="#FFA500"/><stop offset="100%" stop-color="#E8850C"/></linearGradient></defs><path d="M12.9 1.8 L8.3 11.5 L12 12.5 L7.8 22.2 L16.2 12 L12 11.1 Z" fill="url(#sfb)" stroke="#fffbe6" stroke-width="0.6" stroke-linejoin="round"/></svg>`;
 
 const svg_sound_on = `<svg viewBox="0 0 24 24" width="22" height="22" fill="none"><path d="M11 5L6 9H2v6h4l5 4V5z" fill="#ecc986"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07" stroke="#ecc986" stroke-width="2" stroke-linecap="round"/></svg>`;
 
@@ -1474,7 +1555,6 @@ document.addEventListener('DOMContentLoaded', () => {
   init();
   applyTheme(state.collection?.theme || 'taller');
   applySkin(state.collection?.skin || 'clasico');
-  applyCardBack(state.collection?.cardBack || DEFAULT_CARD_BACK);
 });
 
 // ─── Exportar para acceso global desde HTML (eventos inline) ───

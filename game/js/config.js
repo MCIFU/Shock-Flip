@@ -20,14 +20,7 @@ export const BOARD_SIZES = [
 
 export const DEFAULT_BOARD_SIZE = 5;
 
-// ─── Card-back patterns ───
-export const CARD_BACK_PATTERNS = [
-  { id: 'core', name: 'Núcleo', icon: '⚡' },
-  { id: 'grid', name: 'Cuadrícula', icon: '🔲' },
-  { id: 'diamond', name: 'Diamante', icon: '🔶' },
-  { id: 'crosshatch', name: 'Aspa', icon: '❌' },
-];
-
+// ─── Card-back (dorso): un único símbolo, el rayo ⚡ ───
 export const DEFAULT_CARD_BACK = 'core';
 
 // 8 pantallas de dificultad, 5 patrones cada una para tablero 5×5.
@@ -37,22 +30,22 @@ const LEVELS_5X5 = [
   {
     id: 1, name: 'NOVATO',
     patterns: [
-      { twos: 6, threes: 2, bombs: 3 },
-      { twos: 5, threes: 3, bombs: 4 },
-      { twos: 7, threes: 1, bombs: 4 },
-      { twos: 4, threes: 4, bombs: 5 },
-      { twos: 6, threes: 2, bombs: 5 },
+      { twos: 4, threes: 1, bombs: 4 },
+      { twos: 3, threes: 2, bombs: 4 },
+      { twos: 5, threes: 1, bombs: 5 },
+      { twos: 4, threes: 1, bombs: 5 },
+      { twos: 3, threes: 2, bombs: 5 },
     ],
     noBombRow: true,
   },
   {
     id: 2, name: 'RUTINA',
     patterns: [
-      { twos: 5, threes: 3, bombs: 6 },
-      { twos: 6, threes: 2, bombs: 7 },
-      { twos: 4, threes: 4, bombs: 7 },
-      { twos: 7, threes: 1, bombs: 7 },
-      { twos: 5, threes: 3, bombs: 7 },
+      { twos: 4, threes: 2, bombs: 6 },
+      { twos: 5, threes: 1, bombs: 7 },
+      { twos: 3, threes: 3, bombs: 6 },
+      { twos: 4, threes: 2, bombs: 7 },
+      { twos: 5, threes: 2, bombs: 7 },
     ],
     noBombRow: true,
   },
@@ -60,9 +53,9 @@ const LEVELS_5X5 = [
     id: 3, name: 'VETERANO',
     patterns: [
       { twos: 4, threes: 4, bombs: 8 },
-      { twos: 5, threes: 3, bombs: 7 },
-      { twos: 6, threes: 2, bombs: 8 },
-      { twos: 3, threes: 5, bombs: 8 },
+      { twos: 5, threes: 2, bombs: 8 },
+      { twos: 3, threes: 4, bombs: 8 },
+      { twos: 5, threes: 3, bombs: 8 },
       { twos: 4, threes: 3, bombs: 9 },
     ],
     noBombRow: false,
@@ -70,11 +63,11 @@ const LEVELS_5X5 = [
   {
     id: 4, name: 'DURO',
     patterns: [
-      { twos: 4, threes: 4, bombs: 8 },
-      { twos: 3, threes: 5, bombs: 9 },
+      { twos: 4, threes: 4, bombs: 9 },
       { twos: 5, threes: 3, bombs: 9 },
-      { twos: 6, threes: 2, bombs: 10 },
-      { twos: 4, threes: 3, bombs: 10 },
+      { twos: 3, threes: 5, bombs: 9 },
+      { twos: 4, threes: 4, bombs: 10 },
+      { twos: 5, threes: 3, bombs: 10 },
     ],
     noBombRow: false,
   },
@@ -83,42 +76,42 @@ const LEVELS_5X5 = [
     patterns: [
       { twos: 4, threes: 4, bombs: 10 },
       { twos: 5, threes: 3, bombs: 10 },
+      { twos: 4, threes: 5, bombs: 10 },
       { twos: 3, threes: 5, bombs: 10 },
-      { twos: 6, threes: 2, bombs: 10 },
-      { twos: 4, threes: 3, bombs: 10 },
+      { twos: 5, threes: 4, bombs: 10 },
     ],
     noBombRow: false,
   },
   {
     id: 6, name: 'PESADILLA',
     patterns: [
-      { twos: 4, threes: 4, bombs: 10 },
-      { twos: 3, threes: 5, bombs: 10 },
-      { twos: 5, threes: 3, bombs: 10 },
-      { twos: 2, threes: 6, bombs: 10 },
-      { twos: 6, threes: 1, bombs: 11 },
+      { twos: 4, threes: 4, bombs: 11 },
+      { twos: 5, threes: 4, bombs: 10 },
+      { twos: 3, threes: 5, bombs: 11 },
+      { twos: 5, threes: 4, bombs: 11 },
+      { twos: 4, threes: 5, bombs: 11 },
     ],
     noBombRow: false,
   },
   {
     id: 7, name: 'IMPOSIBLE',
     patterns: [
-      { twos: 3, threes: 4, bombs: 11 },
-      { twos: 4, threes: 3, bombs: 12 },
-      { twos: 2, threes: 5, bombs: 10 },
-      { twos: 5, threes: 2, bombs: 13 },
-      { twos: 3, threes: 4, bombs: 10 },
+      { twos: 4, threes: 5, bombs: 12 },
+      { twos: 5, threes: 4, bombs: 12 },
+      { twos: 3, threes: 6, bombs: 11 },
+      { twos: 4, threes: 5, bombs: 12 },
+      { twos: 5, threes: 5, bombs: 11 },
     ],
     noBombRow: false,
   },
   {
     id: 8, name: 'LEYENDA',
     patterns: [
-      { twos: 3, threes: 7, bombs: 10 },
       { twos: 2, threes: 8, bombs: 10 },
-      { twos: 4, threes: 6, bombs: 10 },
+      { twos: 3, threes: 7, bombs: 10 },
       { twos: 1, threes: 9, bombs: 10 },
-      { twos: 5, threes: 5, bombs: 10 },
+      { twos: 4, threes: 6, bombs: 11 },
+      { twos: 3, threes: 8, bombs: 11 },
     ],
     noBombRow: false,
   },
@@ -161,26 +154,35 @@ export function getActiveLevels(size) {
 // Referencia por defecto (5×5)
 export const LEVELS = LEVELS_5X5;
 
-// Multi color gradient map: value → HSL hue
+// Multi color gradient map: value → HSL hue (interpolación por tramos).
+// Anclas: ×1 → azul frío (210°), ×3 → verde (130°), ×6 → ámbar (42°),
+//         ×10 → naranja (25°), ×15 → rojo (5°)
 export function multiColor(value) {
-  // ×1 → azul frío (210°), ×3 → verde (130°), ×6 → ámbar (42°), ×10 → naranja (25°), ×15 → rojo (5°)
-  const t = Math.min((value - 1) / 14, 1); // 1→0, 15→1
-  const hue = 210 - t * 205; // 210 → 5
-  const sat = 70 + t * 30;   // 70 → 100
-  const lit = 45 + t * 5;     // 45 → 50
+  const anchors = [
+    { v: 1,  hue: 210, sat: 70, lit: 45 },
+    { v: 3,  hue: 130, sat: 80, lit: 47 },
+    { v: 6,  hue: 42,  sat: 90, lit: 48 },
+    { v: 10, hue: 25,  sat: 95, lit: 49 },
+    { v: 15, hue: 5,   sat: 100, lit: 50 },
+  ];
+  let low = anchors[0];
+  let high = anchors[anchors.length - 1];
+  for (let i = 0; i < anchors.length - 1; i++) {
+    if (value >= anchors[i].v && value <= anchors[i + 1].v) {
+      low = anchors[i];
+      high = anchors[i + 1];
+      break;
+    }
+  }
+  const t = high.v === low.v ? 0 : (value - low.v) / (high.v - low.v);
+  const hue = Math.round(low.hue + (high.hue - low.hue) * t);
+  const sat = Math.round(low.sat + (high.sat - low.sat) * t);
+  const lit = Math.round(low.lit + (high.lit - low.lit) * t);
   return `hsl(${hue}, ${sat}%, ${lit}%)`;
 }
 
 export const SHIELD_COST = 300;
 export const SHIELDS_PER_FREE = 3; // pantallas completadas por seguro gratis
-
-export const TITLE_THRESHOLDS = [
-  { min: 0, name: 'Aprendiz' },
-  { min: 400, name: 'Técnico' },
-  { min: 1500, name: 'Artesano' },
-  { min: 4000, name: 'Maestro' },
-  { min: 10000, name: 'Leyenda' },
-];
 
 export const DEFAULT_COLLECTION = {
   owned: [],

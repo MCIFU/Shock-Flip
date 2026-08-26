@@ -170,8 +170,43 @@ export function applyScore(score, value) {
 }
 
 // ─── Economía: monedas ganadas por pantalla ───
-// Base por pantalla + bonus según multiplicador final.
-export function coinsForScreen(levelId, finalMulti) {
-  const base = 5 + levelId * 3; // 8..29
-  return Math.round(base + finalMulti * 1.5);
+// Base por pantalla + bonus logarítmico según multiplicador final.
+// Log2 doma el crecimiento exponencial del score: 2^N*3^M no dispara la economía.
+// streak = pantallas ganadas seguidas en la partida actual (aplica multiplicador).
+export function streakMultiplier(streak) {
+  if (!streak || streak < 1) return 1;
+  const s = Math.min(streak, 8);
+  const mult = 1 + (s - 1) * 0.12 + Math.max(0, s - 4) * 0.03;
+  return Math.round(mult * 100) / 100;
+}
+
+export function coinsForScreen(levelId, finalMulti, streak = 1, bestLevel = 1) {
+  const base = 8 + levelId * 4; // 12..40
+  const bonus = Math.round(Math.log2(finalMulti + 1) * levelId);
+  let coins = Math.round((base + bonus) * streakMultiplier(streak));
+  // Anti-farming: repetir pantallas por debajo del mejor nivel alcanzado
+  // reduce las monedas proporcionalmente (levelId / bestLevel).
+  if (bestLevel > levelId) {
+    coins = Math.max(1, Math.round(coins * (levelId / bestLevel)));
+  }
+  return coins;
+}
+
+// ─── Economía: cobro de la partida ───
+// Mueve las monedas de la partida (runCoins) al banco y devuelve lo ganado.
+// El valor devuelto es EXACTAMENTE el que debe mostrarse en el overlay de cobro,
+// y el banco debe subir exactamente esa misma cantidad (invariante de coherencia).
+export function cashOutEarned(state) {
+  const earned = Math.max(0, Math.floor(state.runCoins || 0));
+  state.bankCoins = Math.max(0, Math.floor(state.bankCoins || 0)) + earned;
+  state.runCoins = 0;
+  return earned;
+}
+
+// Plantilla del cuerpo del overlay de cobro. Recibe el importe ganado YA capturado
+// (nunca debe leerse state.runCoins aquí: se resetea antes de renderizar).
+export function cashoutOverlayHTML(earned, bankCoins) {
+  return `
+    <div class="overlay-coins">+${earned} 💰 al banco</div>
+    <p class="overlay-note">Banco: ${bankCoins}</p>`;
 }

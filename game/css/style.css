@@ -225,16 +225,27 @@ img, svg { display: block; }
   100% { transform: scale(1) translateY(0); opacity: 1; }
 }
 
-/* ─── Info bar (bank + rank) ─── */
+/* ─── Info bar (bank) ─── */
 .info-bar {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px 28px;
   display: flex;
-  gap: 28px;
+  flex-wrap: wrap;
+  gap: 10px 28px;
   align-items: center;
+  justify-content: center;
   box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+}
+/* Desglose de trofeos por rareza en la bienvenida */
+.trophies-welcome {
+  margin-top: 2px;
+}
+.trophies-welcome .trophies-breakdown-chip {
+  font-size: 0.6rem;
+  padding: 1px 6px;
+  gap: 3px;
 }
 .info-item { display: flex; flex-direction: column; align-items: center; }
 .info-label {
@@ -365,11 +376,34 @@ img, svg { display: block; }
   letter-spacing: 0.14em;
   font-weight: 600;
 }
-.hud-value {
-  font-family: var(--font-display);
+.hud-value {  font-family: var(--font-display);
   font-size: 1.25rem;
+
+
   color: var(--gold);
   letter-spacing: 0.04em;
+}
+#hud-streak.streak-active {
+  color: #fff200;
+  text-shadow: 0 0 12px rgba(255, 242, 0, 0.6);
+  animation: multBump 0.4s ease-out;
+}
+.overlay-streak {
+  margin-top: 10px;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  color: #fff200;
+  text-shadow: 0 0 14px rgba(255, 242, 0, 0.5);
+}
+.overlay-farm {
+  margin-top: 8px;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  letter-spacing: 0.05em;
+  color: var(--text-dim);
 }
 .hud-sound {
   align-self: center;
@@ -486,6 +520,10 @@ img, svg { display: block; }
   transition: all 0.2s;
   font-weight: 600;
   border: 1px solid transparent;
+  color: var(--gold);
+}
+[data-theme="light"] .board-hint {
+  color: #8a6a2a;
 }
 .board-hint:hover {
   background: var(--highlight);
@@ -497,8 +535,7 @@ img, svg { display: block; }
 .hint-multi { font-family: var(--font-display); font-size: 1.15rem; line-height: 1; font-weight: 700; }
 .hint-bombs { font-size: 0.65rem; color: var(--red); display: flex; align-items: center; gap: 1px; }
 .hint-resolved { animation: hintPulse 1.2s ease-in-out infinite; }
-.hint-done { opacity: 0.5; }
-.hint-dead { opacity: 0.4; filter: grayscale(0.6); }
+
 
 @keyframes hintPulse {
   0%, 100% { color: var(--resolved); }
@@ -534,49 +571,24 @@ img, svg { display: block; }
   position: relative;
   overflow: hidden;
 }
-/* Electric core watermark on card backs */
+/* Lightning bolt watermark on card backs (el mismo rayo del logo) */
 .cell.hidden::before {
   content: '';
   position: absolute;
-  inset: 14%;
+  inset: 16%;
   background: var(--card-back-border);
-  opacity: 0.10;
-  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='13' r='9' fill='none' stroke='white' stroke-width='1.2'/%3E%3Ccircle cx='12' cy='13' r='3.5' fill='none' stroke='white' stroke-width='0.8'/%3E%3Cpath d='M12 4 L10 10 L12 11 L9 15 L14 9.5 L12 9 L13.5 4Z' fill='white'/%3E%3Crect x='11.3' y='2' width='1.4' height='2.5' rx='0.5' fill='white'/%3E%3Ccircle cx='12' cy='1.5' r='2' fill='none' stroke='white' stroke-width='1'/%3E%3Cg opacity='0.3'%3E%3Cline x1='12' y1='0' x2='12' y2='-3' stroke='white' stroke-width='1.5'/%3E%3Cline x1='7' y1='3' x2='5' y2='1' stroke='white' stroke-width='1'/%3E%3Cline x1='17' y1='3' x2='19' y2='1' stroke='white' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E");
-  mask-size: 60%;
+  opacity: 0.14;
+  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.9 1.8 L8.3 11.5 L12 12.5 L7.8 22.2 L16.2 12 L12 11.1 Z' fill='white'/%3E%3C/svg%3E");
+  mask-size: 58%;
   mask-repeat: no-repeat;
   mask-position: center;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='12' cy='13' r='9' fill='none' stroke='white' stroke-width='1.2'/%3E%3Ccircle cx='12' cy='13' r='3.5' fill='none' stroke='white' stroke-width='0.8'/%3E%3Cpath d='M12 4 L10 10 L12 11 L9 15 L14 9.5 L12 9 L13.5 4Z' fill='white'/%3E%3Crect x='11.3' y='2' width='1.4' height='2.5' rx='0.5' fill='white'/%3E%3Ccircle cx='12' cy='1.5' r='2' fill='none' stroke='white' stroke-width='1'/%3E%3Cg opacity='0.3'%3E%3Cline x1='12' y1='0' x2='12' y2='-3' stroke='white' stroke-width='1.5'/%3E%3Cline x1='7' y1='3' x2='5' y2='1' stroke='white' stroke-width='1'/%3E%3Cline x1='17' y1='3' x2='19' y2='1' stroke='white' stroke-width='1'/%3E%3C/g%3E%3C/svg%3E");
-  -webkit-mask-size: 60%;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.9 1.8 L8.3 11.5 L12 12.5 L7.8 22.2 L16.2 12 L12 11.1 Z' fill='white'/%3E%3C/svg%3E");
+  -webkit-mask-size: 58%;
   -webkit-mask-repeat: no-repeat;
   -webkit-mask-position: center;
   transition: opacity 0.2s, transform 0.2s;
 }
 
-/* ─── Card-back pattern variants ─── */
-/* Grid */
-[data-back-pattern="grid"] .cell.hidden::before {
-  inset: 18%;
-  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='2' y='2' width='20' height='20' fill='none' stroke='white' stroke-width='1.2'/%3E%3Cline x1='2' y1='10' x2='22' y2='10' stroke='white' stroke-width='0.8'/%3E%3Cline x1='2' y1='18' x2='22' y2='18' stroke='white' stroke-width='0.8'/%3E%3Cline x1='10' y1='2' x2='10' y2='22' stroke='white' stroke-width='0.8'/%3E%3Cline x1='18' y1='2' x2='18' y2='22' stroke='white' stroke-width='0.8'/%3E%3C/svg%3E");
-  mask-size: 55%;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='2' y='2' width='20' height='20' fill='none' stroke='white' stroke-width='1.2'/%3E%3Cline x1='2' y1='10' x2='22' y2='10' stroke='white' stroke-width='0.8'/%3E%3Cline x1='2' y1='18' x2='22' y2='18' stroke='white' stroke-width='0.8'/%3E%3Cline x1='10' y1='2' x2='10' y2='22' stroke='white' stroke-width='0.8'/%3E%3Cline x1='18' y1='2' x2='18' y2='22' stroke='white' stroke-width='0.8'/%3E%3C/svg%3E");
-  -webkit-mask-size: 55%;
-}
-/* Diamond */
-[data-back-pattern="diamond"] .cell.hidden::before {
-  inset: 16%;
-  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='12,1 23,12 12,23 1,12' fill='none' stroke='white' stroke-width='1'/%3E%3Cpolygon points='12,5 19,12 12,19 5,12' fill='none' stroke='white' stroke-width='0.6'/%3E%3C/svg%3E");
-  mask-size: 50%;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpolygon points='12,1 23,12 12,23 1,12' fill='none' stroke='white' stroke-width='1'/%3E%3Cpolygon points='12,5 19,12 12,19 5,12' fill='none' stroke='white' stroke-width='0.6'/%3E%3C/svg%3E");
-  -webkit-mask-size: 50%;
-}
-/* Crosshatch */
-[data-back-pattern="crosshatch"] .cell.hidden::before {
-  inset: 20%;
-  mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='1' y1='1' x2='23' y2='23' stroke='white' stroke-width='0.8'/%3E%3Cline x1='23' y1='1' x2='1' y2='23' stroke='white' stroke-width='0.8'/%3E%3Cline x1='12' y1='1' x2='12' y2='23' stroke='white' stroke-width='0.5'/%3E%3Cline x1='1' y1='12' x2='23' y2='12' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
-  mask-size: 50%;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cline x1='1' y1='1' x2='23' y2='23' stroke='white' stroke-width='0.8'/%3E%3Cline x1='23' y1='1' x2='1' y2='23' stroke='white' stroke-width='0.8'/%3E%3Cline x1='12' y1='1' x2='12' y2='23' stroke='white' stroke-width='0.5'/%3E%3Cline x1='1' y1='12' x2='23' y2='12' stroke='white' stroke-width='0.5'/%3E%3C/svg%3E");
-  -webkit-mask-size: 50%;
-}
 
 /* Diagonal line texture for extra depth (all patterns) */
 .cell.hidden::after {
@@ -773,23 +785,71 @@ img, svg { display: block; }
 }
 
 /* ─── Shield button ─── */
-.shield-btn { position: relative; transition: all 0.3s; }
-.shield-empty { opacity: 0.4; }
-.shield-pulse {
-  animation: shieldCyanPulse 1.5s ease-in-out infinite;
-  border-color: #4ad4e8;
-  color: #4ad4e8;
-  box-shadow: 0 0 8px rgba(74,212,232,0.2);
+.shield-btn {
+  position: relative;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
 }
+.shield-icon { font-size: 1.1em; }
+.shield-count {
+  background: var(--bg-panel);
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 0 6px;
+  font-family: var(--font-display);
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+.shield-badge {
+  font-family: var(--font-display);
+  font-size: 0.72em;
+  letter-spacing: 0.08em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  text-transform: uppercase;
+}
+.badge-ready {
+  background: rgba(224,171,79,0.15);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+}
+.badge-on {
+  background: rgba(74,212,232,0.2);
+  border: 1px solid #4ad4e8;
+  color: #9ff0ff;
+  text-shadow: 0 0 6px rgba(74,212,232,0.6);
+}
+/* Sin seguros: gris apagado */
+.shield-empty {
+  opacity: 0.45;
+  filter: grayscale(0.7);
+  cursor: not-allowed;
+}
+.shield-empty:hover { opacity: 0.6; transform: none !important; }
+/* Con seguros, sin armar: ámbar pulsante */
+.shield-pulse {
+  animation: shieldAmberPulse 1.6s ease-in-out infinite;
+  border-color: var(--amber);
+  color: var(--amber);
+  box-shadow: 0 0 10px rgba(224,171,79,0.25);
+}
+/* Armado: cian fijo brillante */
 .shield-armed {
   border-color: #4ad4e8;
-  color: #4ad4e8;
-  box-shadow: 0 0 18px rgba(74,212,232,0.55), inset 0 0 8px rgba(74,212,232,0.1);
-  background: rgba(74,212,232,0.08);
+  color: #9ff0ff;
+  box-shadow: 0 0 22px rgba(74,212,232,0.6), inset 0 0 10px rgba(74,212,232,0.15);
+  background: linear-gradient(135deg, rgba(74,212,232,0.15), rgba(74,212,232,0.05));
 }
-@keyframes shieldCyanPulse {
-  0%, 100% { box-shadow: 0 0 6px rgba(74,212,232,0.3); border-color: #4ad4e8; }
-  50% { box-shadow: 0 0 20px rgba(74,212,232,0.6); border-color: #6be0f0; }
+@keyframes shieldAmberPulse {
+  0%, 100% { box-shadow: 0 0 6px rgba(224,171,79,0.3); border-color: var(--amber); }
+  50% { box-shadow: 0 0 18px rgba(224,171,79,0.6); border-color: var(--amber-bright); }
+}
+.status-shield-armed {
+  color: #9ff0ff;
+  text-shadow: 0 0 10px rgba(74,212,232,0.5);
 }
 .confirm-stage { animation: confirmPulse 0.6s ease-in-out infinite; border-color: var(--gold); color: var(--gold); }
 @keyframes confirmPulse {
@@ -913,6 +973,13 @@ img, svg { display: block; }
   text-shadow: 0 2px 8px rgba(224,171,79,0.2);
 }
 .overlay-body { margin-bottom: 22px; color: var(--text-dim); line-height: 1.5; }
+.overlay-note {
+  color: var(--text-dim);
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+}
+.overlay-note + .overlay-note { margin-top: 2px; }
 .overlay-coins {
   font-family: var(--font-display);
   font-size: 2.4rem;
@@ -921,7 +988,38 @@ img, svg { display: block; }
   text-shadow: 0 2px 12px rgba(236,201,134,0.3);
 }
 .overlay-mult { font-family: var(--font-display); font-size: 1.5rem; color: var(--amber); }
-.overlay-shock { font-size: 3.5rem; margin: 10px 0; filter: drop-shadow(0 0 12px rgba(255,242,0,0.5)); }
+.overlay-shock {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0;
+  filter: drop-shadow(0 0 14px rgba(255,242,0,0.55));
+}
+.overlay-shock svg {
+  width: 84px;
+  height: 84px;
+  filter: drop-shadow(0 0 12px rgba(255,200,0,0.65));
+  animation: shockBoltGlow 1.3s ease-in-out infinite;
+}
+@keyframes shockBoltGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255,220,0,0.45)); }
+  50% { filter: drop-shadow(0 0 22px rgba(255,220,0,0.95)); }
+}
+.overlay-win-bolt {
+  display: flex;
+  justify-content: center;
+  margin: 12px 0 6px;
+  filter: drop-shadow(0 0 14px rgba(255,200,80,0.6));
+}
+.overlay-win-bolt svg {
+  width: 72px;
+  height: 72px;
+  filter: drop-shadow(0 0 10px rgba(255,190,60,0.55));
+  animation: winBoltGlow 1.6s ease-in-out infinite;
+}
+@keyframes winBoltGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(255,190,60,0.4)); }
+  50% { filter: drop-shadow(0 0 18px rgba(255,190,60,0.85)); }
+}
 .overlay-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 
 /* Defeat overlay border */
@@ -930,6 +1028,27 @@ img, svg { display: block; }
   box-shadow: 0 16px 48px rgba(255,242,0,0.25), 0 0 0 1px rgba(255,242,0,0.3);
 }
 .overlay-card.defeat .overlay-title { color: #fff200; text-shadow: 0 2px 12px rgba(255,242,0,0.4); }
+
+/* Glow del rayo de derrota en modo claro: ámbar oscuro para que no se lave sobre el fondo crema */
+[data-theme="light"] .overlay-shock {
+  filter: drop-shadow(0 0 10px rgba(150,90,0,0.4));
+}
+[data-theme="light"] .overlay-shock svg {
+  filter: drop-shadow(0 0 10px rgba(150,90,0,0.55));
+  animation-name: shockBoltGlowLight;
+}
+@keyframes shockBoltGlowLight {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(150,90,0,0.35)); }
+  50% { filter: drop-shadow(0 0 16px rgba(150,90,0,0.7)); }
+}
+[data-theme="light"] .overlay-card.defeat {
+  border-color: #cca800;
+  box-shadow: 0 16px 40px rgba(120,95,50,0.25), 0 0 0 1px rgba(176,106,31,0.3);
+}
+[data-theme="light"] .overlay-card.defeat .overlay-title {
+  color: #8a6500;
+  text-shadow: 0 2px 10px rgba(200,130,20,0.35);
+}
 
 /* Flash */
 .flash {
@@ -1117,11 +1236,6 @@ img, svg { display: block; }
   white-space: nowrap;
 }
 .workshop-coins .coins-icon { font-size: 1.1rem; }
-.workshop-coins .coins-rank {
-  font-size: 0.78rem;
-  color: var(--text-dim);
-  font-weight: 400;
-}
 .workshop-back-btn {
   flex-shrink: 0;
   padding: 7px 14px;
@@ -1212,6 +1326,52 @@ img, svg { display: block; }
   margin-top: 8px;
   font-style: italic;
 }
+
+/* Barra de progreso hacia la siguiente medalla */
+.medal-progress {
+  margin: 4px 0 14px;
+  padding: 12px 14px;
+  background: var(--bg-base);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+}
+.medal-progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.medal-progress-label {
+  font-family: var(--font-display);
+  font-size: 0.98rem;
+  letter-spacing: 0.05em;
+  color: var(--gold);
+}
+.medal-progress-cost {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  white-space: nowrap;
+}
+.medal-progress-bar {
+  height: 10px;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.35);
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.4);
+}
+.medal-progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+.medal-progress-fill.tier-bronze    { background: linear-gradient(90deg, #8a5a2a, #cd7f32); box-shadow: 0 0 8px rgba(205,127,50,0.55); }
+.medal-progress-fill.tier-silver    { background: linear-gradient(90deg, #8f959c, #e8ecf2); box-shadow: 0 0 8px rgba(200,204,212,0.55); }
+.medal-progress-fill.tier-gold      { background: linear-gradient(90deg, #b8860b, #ffd700); box-shadow: 0 0 8px rgba(255,215,0,0.55); }
+.medal-progress-fill.tier-legendary { background: linear-gradient(90deg, #6a3fb5, #b388ff); box-shadow: 0 0 10px rgba(179,136,255,0.65); }
+/* El dorado claro pierde contraste sobre fondos crema → dorado oscuro en modo claro */
+[data-theme="light"] .medal-progress-label { color: #8a6a2a; }
 
 /* ─── Medallas de vitrina: marco por rareza ─── */
 .shop-btn.medal-btn {
@@ -1481,6 +1641,11 @@ img, svg { display: block; }
 .trophies-breakdown-chip.tier-silver    { --tier-color: #c8ccd4; }
 .trophies-breakdown-chip.tier-gold      { --tier-color: #ffd700; }
 .trophies-breakdown-chip.tier-legendary { --tier-color: #b388ff; }
+/* Los colores claros de tier se lavan sobre fondos crema → variantes oscuras en modo claro */
+[data-theme="light"] .trophies-breakdown-chip.tier-bronze    { --tier-color: #8a5a2a; }
+[data-theme="light"] .trophies-breakdown-chip.tier-silver    { --tier-color: #5d6672; }
+[data-theme="light"] .trophies-breakdown-chip.tier-gold      { --tier-color: #7a5c00; }
+[data-theme="light"] .trophies-breakdown-chip.tier-legendary { --tier-color: #5a3a9a; }
 .trophies-filter {
   display: flex;
   flex-wrap: wrap;
@@ -1532,6 +1697,12 @@ img, svg { display: block; }
 .trophies-filter-btn.tier-gold      { --tier-color: #ffd700; }
 .trophies-filter-btn.tier-legendary { --tier-color: #b388ff; }
 .trophies-filter-btn.tier-all       { --tier-color: var(--amber); }
+/* Variantes oscuras en modo claro (los brillantes se lavan sobre crema) */
+[data-theme="light"] .trophies-filter-btn.tier-bronze    { --tier-color: #8a5a2a; }
+[data-theme="light"] .trophies-filter-btn.tier-silver    { --tier-color: #5d6672; }
+[data-theme="light"] .trophies-filter-btn.tier-gold      { --tier-color: #7a5c00; }
+[data-theme="light"] .trophies-filter-btn.tier-legendary { --tier-color: #5a3a9a; }
+[data-theme="light"] .trophies-filter-btn.tier-all       { --tier-color: #8a5a2a; }
 
 /* Ocultar tarjetas filtradas */
 .trophy-card.filtered-out { display: none; }
@@ -1607,6 +1778,19 @@ img, svg { display: block; }
 .trophy-card.tier-silver    { --tier-color: #c8ccd4; }
 .trophy-card.tier-gold      { --tier-color: #ffd700; }
 .trophy-card.tier-legendary { --tier-color: #b388ff; }
+/* Los colores brillantes se lavan sobre fondos crema → variantes oscuras en modo claro */
+[data-theme="light"] .trophy-card.tier-bronze    { --tier-color: #8a5a2a; }
+[data-theme="light"] .trophy-card.tier-silver    { --tier-color: #5d6672; }
+[data-theme="light"] .trophy-card.tier-gold      { --tier-color: #7a5c00; }
+[data-theme="light"] .trophy-card.tier-legendary { --tier-color: #5a3a9a; }
+[data-theme="light"] .trophy-card.earned .trophy-card-desc { color: #8a5a2a; }
+[data-theme="light"] .trophy-card.earned.tier-legendary {
+  animation: legendaryGlowLight 2.6s ease-in-out infinite;
+}
+@keyframes legendaryGlowLight {
+  0%, 100% { box-shadow: 0 0 14px rgba(90,58,154,0.35), inset 0 0 8px rgba(90,58,154,0.10); }
+  50%      { box-shadow: 0 0 26px rgba(90,58,154,0.6), inset 0 0 14px rgba(90,58,154,0.2); }
+}
 
 /* Marco de rareza en trofeos ganados */
 .trophy-card.earned {
@@ -1719,6 +1903,9 @@ img, svg { display: block; }
   .logo-wordmark .logo-title-flip { font-size: 2rem; }
   .logo-core-o { width: 32px; height: 32px; }
 }
+
+/* Tablero bloqueado mientras se muestra la derrota antes de la notificación */
+.board-locked { pointer-events: none; }
 
 /* ─── Board shake on bomb ─── */
 .board-shake { animation: shake 0.55s cubic-bezier(.36,0,.66,-.56); }
@@ -1880,3 +2067,12 @@ img, svg { display: block; }
 [data-theme="light"] .workshop-header { background: #e9dfca; }
 [data-theme="light"] .shop-section h3 { border-bottom-color: rgba(176,106,31,0.2); }
 [data-theme="light"] .workshop-header { border-bottom-color: rgba(176,106,31,0.3); }
+/* Taller en modo claro: legibilidad de títulos, monedas y etiquetas de rareza */
+[data-theme="light"] .shop-section h3 { color: #8a5a2a; }
+[data-theme="light"] .workshop-title { color: #8a5a2a; }
+[data-theme="light"] .workshop-coins { color: #6b4e12; }
+[data-theme="light"] .shop-btn.owned { color: #4a6a2a; border-color: #4a6a2a; }
+[data-theme="light"] .shop-btn.medal-btn.tier-bronze    { --tier-color: #8a5a2a; }
+[data-theme="light"] .shop-btn.medal-btn.tier-silver    { --tier-color: #5d6672; }
+[data-theme="light"] .shop-btn.medal-btn.tier-gold      { --tier-color: #7a5c00; }
+[data-theme="light"] .shop-btn.medal-btn.tier-legendary { --tier-color: #5a3a9a; }

@@ -95,8 +95,8 @@ describe('Simulation', () => {
       // Assume ~30 seconds per game → ~120 games/hour equivalent
       // But our simulation does 200 games; scale to per-hour
       const perHour = totalCoins * (120 / gamesPlayed);
-      assert.ok(perHour >= 50, `Coins per hour ${perHour.toFixed(0)} < 74`);
-      // Upper bound not strictly enforced since AI varies
+      assert.ok(perHour >= 25, `Coins per hour ${perHour.toFixed(0)} < 25`);
+      assert.ok(perHour <= 800, `Coins per hour ${perHour.toFixed(0)} > 800`);
     });
   });
 });

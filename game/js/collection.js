@@ -1,5 +1,5 @@
 // collection.js — Catálogo: temas, dorsos, medallas, trofeos, seguro, títulos
-import { KEYS, DEFAULT_COLLECTION, DEFAULT_STATS, SHIELD_COST, SHIELDS_PER_FREE, TITLE_THRESHOLDS } from './config.js';
+import { KEYS, DEFAULT_COLLECTION, DEFAULT_STATS, SHIELD_COST, SHIELDS_PER_FREE } from './config.js';
 
 // ─── Temas de tablero ───
 export const THEMES = {
@@ -188,14 +188,6 @@ export const SKINS = {
     },
   },
 };
-
-// ─── Títulos de prestigio ───
-export function getTitle(coins) {
-  for (let i = TITLE_THRESHOLDS.length - 1; i >= 0; i--) {
-    if (coins >= TITLE_THRESHOLDS[i].min) return TITLE_THRESHOLDS[i].name;
-  }
-  return 'Aprendiz';
-}
 
 // ─── Medallas de vitrina (comprables) ───
 export const MEDALS = [

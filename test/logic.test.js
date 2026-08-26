@@ -182,9 +182,107 @@ describe('Logic', () => {
   });
 
   describe('coinsForScreen', () => {
-    it('should return reasonable values', () => {
+    it('should return reasonable values (log-scale, not linear)', () => {
+      // New formula: base + log2(score+1) * levelId. Level 1, score 2 → 12 + log2(3)*1 ≈ 14
       const c = Logic.coinsForScreen(1, 2);
       assert.ok(c > 0 && c < 100);
+    });
+
+    it('should scale with level but not explode', () => {
+      const c1 = Logic.coinsForScreen(1, 100);
+      const c4 = Logic.coinsForScreen(4, 100);
+      const c8 = Logic.coinsForScreen(8, 100);
+      // Higher levels give more coins
+      assert.ok(c8 > c4 && c4 > c1);
+      // But level 8 with score 100 shouldn't exceed ~100 coins
+      assert.ok(c8 < 150, `Level 8 coins ${c8} >= 150`);
+    });
+
+    it('should apply streak multiplier', () => {
+      const base = Logic.coinsForScreen(3, 10, 1);
+      const streak2 = Logic.coinsForScreen(3, 10, 2);
+      const streak5 = Logic.coinsForScreen(3, 10, 5);
+      // More streak → more coins
+      assert.ok(streak5 > streak2 && streak2 > base);
+    });
+
+    it('should reduce coins when repeating screens below best level', () => {
+      const fresh = Logic.coinsForScreen(1, 10, 1, 1);
+      const farmed = Logic.coinsForScreen(1, 10, 1, 8);
+      // Farming level 1 with bestLevel=8 gives far fewer coins
+      assert.ok(farmed < fresh, `farmed ${farmed} >= fresh ${fresh}`);
+      assert.ok(farmed >= 1, 'never below 1');
+    });
+
+    it('should not penalize screens at or above best level', () => {
+      const atBest = Logic.coinsForScreen(8, 10, 1, 8);
+      const aboveBest = Logic.coinsForScreen(4, 10, 1, 3);
+      // bestLevel=3, screen 4 → no penalty
+      const noPenalty = Logic.coinsForScreen(4, 10, 1, 3);
+      assert.equal(aboveBest, noPenalty);
+      assert.equal(atBest, Logic.coinsForScreen(8, 10, 1, 1)); // bestLevel=1 → level 8 not penalized
+    });
+  });
+
+  describe('streakMultiplier', () => {
+    it('should be 1 for streak 1', () => {
+      assert.equal(Logic.streakMultiplier(1), 1);
+      assert.equal(Logic.streakMultiplier(0), 1);
+      assert.equal(Logic.streakMultiplier(undefined), 1);
+    });
+    it('should grow and cap at streak 8', () => {
+      const m2 = Logic.streakMultiplier(2);
+      const m8 = Logic.streakMultiplier(8);
+      const m20 = Logic.streakMultiplier(20);
+      assert.ok(m2 > 1);
+      assert.ok(m8 > m2);
+      assert.equal(m20, m8, 'capped at 8');
+    });
+    it('should produce sane values', () => {
+      assert.ok(Logic.streakMultiplier(8) < 2.5, `mult ${Logic.streakMultiplier(8)}`);
+    });
+  });
+
+  describe('cashOutEarned', () => {
+    it('should move runCoins to bank exactly and return earned', () => {
+      const state = { bankCoins: 95, runCoins: 250 };
+      const earned = Logic.cashOutEarned(state);
+      assert.equal(earned, 250);
+      assert.equal(state.bankCoins, 345);   // 95 + 250, sube EXACTAMENTE lo ganado
+      assert.equal(state.runCoins, 0);
+    });
+
+    it('should keep bank unchanged when runCoins is 0', () => {
+      const state = { bankCoins: 500, runCoins: 0 };
+      const earned = Logic.cashOutEarned(state);
+      assert.equal(earned, 0);
+      assert.equal(state.bankCoins, 500);
+      assert.equal(state.runCoins, 0);
+    });
+
+    it('should floor fractional runCoins and clamp negatives', () => {
+      const state = { bankCoins: 10, runCoins: 12.7 };
+      assert.equal(Logic.cashOutEarned(state), 12);
+      assert.equal(state.bankCoins, 22);
+      const neg = { bankCoins: 10, runCoins: -5 };
+      assert.equal(Logic.cashOutEarned(neg), 0);
+      assert.equal(neg.bankCoins, 10);
+    });
+  });
+
+  describe('cashoutOverlayHTML', () => {
+    it('should show the earned amount and the new bank total', () => {
+      const html = Logic.cashoutOverlayHTML(250, 345);
+      assert.ok(html.includes('+250 💰 al banco'), 'must show earned amount');
+      assert.ok(html.includes('Banco: 345'), 'must show new bank total');
+    });
+
+    it('should not depend on any mutable state (earned is passed in)', () => {
+      // El bug original: el overlay leía runCoins (ya reseteado a 0) → siempre +0.
+      // La plantilla recibe el importe explícitamente, así que renderiza el valor real.
+      const html = Logic.cashoutOverlayHTML(0, 345);
+      assert.ok(html.includes('+0 💰 al banco'));
+      assert.ok(!html.includes('runCoins'));
     });
   });
 });

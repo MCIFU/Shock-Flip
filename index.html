@@ -55,8 +55,8 @@
         <span class="info-value" id="bank-welcome">0</span>
       </div>
       <div class="info-item">
-        <span class="info-label">Rango</span>
-        <span class="info-value" id="rank-welcome">Aprendiz</span>
+        <span class="info-label">Trofeos</span>
+        <div class="trophies-breakdown trophies-welcome" id="trophies-welcome"></div>
       </div>
     </div>
 
@@ -85,6 +85,7 @@
       <div class="hud-item"><span class="hud-label">NIVEL</span><span class="hud-value" id="hud-level">1</span></div>
       <div class="hud-item"><span class="hud-label">BANCO</span><span class="hud-value" id="hud-bank">0</span></div>
       <div class="hud-item"><span class="hud-label">PARTIDA</span><span class="hud-value" id="hud-run">0</span></div>
+      <div class="hud-item"><span class="hud-label">RACHA</span><span class="hud-value" id="hud-streak">—</span></div>
       <div class="hud-item"><span class="hud-label">MULT</span><span class="hud-value" id="hud-mult">—</span></div>
       <button class="btn-icon hud-sound" id="btn-sonido-game" title="Activar/desactivar sonido" aria-label="Sonido" onclick="ShockFlip.toggleSound()"></button>
       <button class="btn-icon hud-sound" id="btn-haptics-game" title="Activar/desactivar vibración" aria-label="Vibración" onclick="ShockFlip.toggleHaptics()"></button>
@@ -116,7 +117,7 @@
     <div class="workshop-header">
       <button class="btn small workshop-back-btn" id="workshop-back">← VOLVER</button>
       <h2 class="workshop-title" id="workshop-title">TALLER</h2>
-      <div class="workshop-coins" id="workshop-bank"><span class="coins-icon">🪙</span> 0 <span class="coins-rank">Aprendiz</span></div>
+      <div class="workshop-coins" id="workshop-bank"><span class="coins-icon">🪙</span> 0</div>
     </div>
     <div id="workshop-content"></div>
   </section>

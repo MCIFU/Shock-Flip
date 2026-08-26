@@ -11,7 +11,7 @@ globalThis.localStorage = {
 
 import {
   loadCoins, saveCoins, loadCollection, saveCollection,
-  loadStats, saveStats, getTitle, ShieldManager,
+  loadStats, saveStats, ShieldManager,
   THEMES, SKINS, MEDALS, TROPHIES, TROPHY_TIERS, checkTrophies, isUnlocked,
 } from '../game/js/collection.js';
 import { DEFAULT_COLLECTION, DEFAULT_STATS, KEYS } from '../game/js/config.js';
@@ -69,14 +69,6 @@ describe('Collection', () => {
       saveStats(stats);
       assert.equal(loadStats().screensWon, 42);
     });
-  });
-
-  describe('getTitle', () => {
-    it('should return Aprendiz for 0', () => assert.equal(getTitle(0), 'Aprendiz'));
-    it('should return Tecnico for 500', () => assert.equal(getTitle(500), 'Técnico'));
-    it('should return Artesano for 2000', () => assert.equal(getTitle(2000), 'Artesano'));
-    it('should return Maestro for 5000', () => assert.equal(getTitle(5000), 'Maestro'));
-    it('should return Leyenda for 12000', () => assert.equal(getTitle(12000), 'Leyenda'));
   });
 
   describe('THEMES', () => {
