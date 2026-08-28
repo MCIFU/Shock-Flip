@@ -11,243 +11,45 @@
 <link rel="manifest" href="/public/manifest.webmanifest">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><defs><linearGradient id='r' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23FFD700'/><stop offset='50%25' stop-color='%23FFA500'/><stop offset='100%25' stop-color='%23FFD700'/></linearGradient><linearGradient id='b' x1='0.5' y1='0' x2='0.5' y2='1'><stop offset='0%25' stop-color='%23FFFBEA'/><stop offset='30%25' stop-color='%23FFD700'/><stop offset='100%25' stop-color='%23E8850C'/></linearGradient></defs><circle cx='12' cy='12' r='10.5' fill='%231A1D2B' stroke='url(%23r)' stroke-width='3'/><path d='M12.3 2.2 L8.1 12.3 L12 12.8 L7.6 21.8 L16.4 12.8 L12 11.8 Z' fill='url(%23b)'/></svg>">
 <script>
-  // Apply theme instantly before paint to avoid flash (auto sigue al sistema)
   (function(){var t=localStorage.getItem('bombflip:theme');var dark=t==='dark'||((t!=='light')&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.setAttribute('data-theme',dark?'dark':'light');})();
 </script>
 <link rel="stylesheet" href="game/css/style.css">
 </head>
 <body>
-
 <div id="app">
-
-  <!-- Bienvenida -->
   <section id="welcome-section" class="screen">
-    <div class="logo-wrap">
-      <div class="logo-glow"></div>
-      <div class="logo-wordmark">
-        <span class="logo-title-shock">SH</span>
-        <svg class="logo-core-o" viewBox="0 0 52 52" fill="none">
-          <defs>
-            <linearGradient id="ring" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stop-color="#FFD700"/>
-              <stop offset="50%" stop-color="#FFA500"/>
-              <stop offset="100%" stop-color="#FFD700"/>
-            </linearGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="2" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-          </defs>
-          <circle cx="26" cy="26" r="23" fill="#1A1D2B" stroke="url(#ring)" stroke-width="3.5"/>
-          <defs><linearGradient id="boltGrad" x1="0.5" y1="0" x2="0.5" y2="1"><stop offset="0%" stop-color="#FFFBEA"/><stop offset="30%" stop-color="#FFD700"/><stop offset="70%" stop-color="#FFA500"/><stop offset="100%" stop-color="#E8850C"/></linearGradient></defs>
-          <path d="M 28 4 L 18 25 L 26 27 L 17 48 L 35 26 L 26 24 Z" fill="url(#boltGrad)" filter="url(#glow)" stroke-linejoin="round"/>
-        </svg>
-        <span class="logo-title-shock">CK</span>
-        <span class="logo-title-flip">FLIP</span>
-      </div>
-      <h1 class="logo-title" style="display:none"></h1>
-      <p class="logo-sub">— puzzle arcade —</p>
-    </div>
-
-    <div class="info-bar">
-      <div class="info-item">
-        <span class="info-label">Banco</span>
-        <span class="info-value" id="bank-welcome">0</span>
-      </div>
-      <div class="info-item">
-        <span class="info-label">Trofeos</span>
-        <div class="trophies-breakdown trophies-welcome" id="trophies-welcome"></div>
-      </div>
-    </div>
-
-    <div class="welcome-btns">
-      <button class="btn primary" id="btn-jugar">JUGAR</button>
-      <button class="btn" id="btn-taller">TALLER</button>
-      <button class="btn" id="btn-como-jugar">CÓMO JUGAR</button>
-      <button class="btn" id="btn-opciones">⚙️ OPCIONES</button>
-      <div style="display:flex;gap:10px;margin-top:8px;align-items:center">
-        <button class="btn-icon btn-stats" id="btn-stats-welcome" title="Estadísticas" onclick="ShockFlip.showStats()">📊</button>
-        <button class="btn-icon btn-trophies" id="btn-trophies-welcome" title="Trofeos" onclick="ShockFlip.showTrophies()">🏆</button>
-        <button class="theme-toggle" id="theme-toggle" title="Tema: Oscuro / Claro / Automático" aria-label="Cambiar tema (oscuro, claro o automático)" onclick="window.ShockFlip && ShockFlip.toggleTheme()">
-          <span class="theme-toggle-track">
-            <span class="theme-toggle-thumb" data-mode="auto"></span>
-          </span>
-          <span class="theme-toggle-label">🅰️</span>
-        </button>
-      </div>
-    </div>
+    <div class="logo-wrap"><div class="logo-glow"></div><div class="logo-wordmark"><span class="logo-title-shock">SH</span><svg class="logo-core-o" viewBox="0 0 52 52" fill="none"><defs><linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#FFD700"/><stop offset="50%" stop-color="#FFA500"/><stop offset="100%" stop-color="#FFD700"/></linearGradient><filter id="glow"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><circle cx="26" cy="26" r="23" fill="#1A1D2B" stroke="url(#ring)" stroke-width="3.5"/><defs><linearGradient id="boltGrad" x1="0.5" y1="0" x2="0.5" y2="1"><stop offset="0%" stop-color="#FFFBEA"/><stop offset="30%" stop-color="#FFD700"/><stop offset="70%" stop-color="#FFA500"/><stop offset="100%" stop-color="#E8850C"/></linearGradient></defs><path d="M 28 4 L 18 25 L 26 27 L 17 48 L 35 26 L 26 24 Z" fill="url(#boltGrad)" filter="url(#glow)" stroke-linejoin="round"/></svg><span class="logo-title-shock">CK</span><span class="logo-title-flip">FLIP</span></div><h1 class="logo-title" style="display:none"></h1><p class="logo-sub">— puzzle arcade —</p></div>
+    <div class="info-bar"><div class="info-item"><span class="info-label">Banco</span><span class="info-value" id="bank-welcome">0</span></div><div class="info-item"><span class="info-label">Trofeos</span><div class="trophies-breakdown trophies-welcome" id="trophies-welcome"></div></div></div>
+    <div class="welcome-btns"><button class="btn primary" id="btn-jugar">JUGAR</button><button class="btn" id="btn-taller">TALLER</button><button class="btn" id="btn-como-jugar">CÓMO JUGAR</button><button class="btn" id="btn-opciones">⚙️ OPCIONES</button><div style="display:flex;gap:10px;margin-top:8px;align-items:center"><button class="btn-icon btn-stats" id="btn-stats-welcome" title="Estadísticas" onclick="ShockFlip.showStats()">📊</button><button class="btn-icon btn-trophies" id="btn-trophies-welcome" title="Trofeos" onclick="ShockFlip.showTrophies()">🏆</button><button class="theme-toggle" id="theme-toggle" title="Tema: Oscuro / Claro / Automático" aria-label="Cambiar tema (oscuro, claro o automático)" onclick="window.ShockFlip && ShockFlip.toggleTheme()"><span class="theme-toggle-track"><span class="theme-toggle-thumb" data-mode="auto"></span></span><span class="theme-toggle-label">🅰️</span></button></div></div>
   </section>
 
-  <!-- Partida -->
-  <section id="game-section" class="screen">
-    <!-- HUD -->
-    <div class="hud">
-      <div class="hud-item"><span class="hud-label">NIVEL</span><span class="hud-value" id="hud-level">1</span></div>
-      <div class="hud-item"><span class="hud-label">BANCO</span><span class="hud-value" id="hud-bank">0</span></div>
-      <div class="hud-item"><span class="hud-label">PARTIDA</span><span class="hud-value" id="hud-run">0</span></div>
-      <div class="hud-item"><span class="hud-label">RACHA</span><span class="hud-value" id="hud-streak">—</span></div>
-      <div class="hud-item"><span class="hud-label">MULT</span><span class="hud-value" id="hud-mult">—</span></div>
-      <button class="btn-icon hud-sound" id="btn-sonido-game" title="Activar/desactivar sonido" aria-label="Sonido" onclick="ShockFlip.toggleSound()"></button>
-      <button class="btn-icon hud-sound" id="btn-haptics-game" title="Activar/desactivar vibración" aria-label="Vibración" onclick="ShockFlip.toggleHaptics()"></button>
-    </div>
+  <section id="game-section" class="screen"><div class="hud"><div class="hud-item"><span class="hud-label">NIVEL</span><span class="hud-value" id="hud-level">1</span></div><div class="hud-item"><span class="hud-label">BANCO</span><span class="hud-value" id="hud-bank">0</span></div><div class="hud-item"><span class="hud-label">PARTIDA</span><span class="hud-value" id="hud-run">0</span></div><div class="hud-item"><span class="hud-label">RACHA</span><span class="hud-value" id="hud-streak">—</span></div><div class="hud-item"><span class="hud-label">MULT</span><span class="hud-value" id="hud-mult">—</span></div><button class="btn-icon hud-sound" id="btn-sonido-game" title="Activar/desactivar sonido" aria-label="Sonido" onclick="ShockFlip.toggleSound()"></button><button class="btn-icon hud-sound" id="btn-haptics-game" title="Activar/desactivar vibración" aria-label="Vibración" onclick="ShockFlip.toggleHaptics()"></button></div><div class="board-wrap"><div id="board-area" class="board-grid" aria-label="Tablero de juego 5 por 5"></div></div><p id="status-bar" class="status-bar">Revela los multiplicadores · Quedan 0</p><div class="controls"><button class="btn" id="btn-memo" aria-pressed="false" onclick="ShockFlip.toggleMemo()">✎ MEMO</button><button class="btn shield-btn" id="btn-shield" onclick="ShockFlip.toggleShield()">🛡️ AISLANTE (0)</button><button class="btn warn" id="btn-rendirse" onclick="ShockFlip.rendirse()">RENDIRSE</button><button class="btn" id="btn-salir" onclick="ShockFlip.salir()">SALIR</button><button class="btn-icon" onclick="ShockFlip.showHowToPlay()" title="Cómo jugar">ⓘ</button><button class="btn-icon" onclick="ShockFlip.showWorkshop()" title="Taller">🔧</button><button class="btn-icon" id="btn-stats-game" title="Estadísticas" onclick="ShockFlip.showStats()">📊</button></div></section>
 
-    <!-- Tablero -->
-    <div class="board-wrap">
-      <div id="board-area" class="board-grid" aria-label="Tablero de juego 5 por 5"></div>
-    </div>
+  <section id="workshop-section" class="hidden"><div class="workshop-header"><button class="btn small workshop-back-btn" id="workshop-back">← VOLVER</button><h2 class="workshop-title" id="workshop-title">TALLER</h2><div class="workshop-coins" id="workshop-bank"><span class="coins-icon">🪙</span> 0</div></div><div id="workshop-content"></div></section>
 
-    <!-- Status -->
-    <p id="status-bar" class="status-bar">Revela los multiplicadores · Quedan 0</p>
-
-    <!-- Controles -->
-    <div class="controls">
-      <button class="btn" id="btn-memo" aria-pressed="false" onclick="ShockFlip.toggleMemo()">✎ MEMO</button>
-      <button class="btn shield-btn" id="btn-shield" onclick="ShockFlip.toggleShield()">🛡️ AISLANTE (0)</button>
-      <button class="btn" id="btn-reiniciar" onclick="ShockFlip.reiniciar()">REINICIAR</button>
-      <button class="btn warn" id="btn-rendirse" onclick="ShockFlip.rendirse()">RENDIRSE</button>
-      <button class="btn" id="btn-salir" onclick="ShockFlip.salir()">SALIR</button>
-      <button class="btn-icon" onclick="ShockFlip.showHowToPlay()" title="Cómo jugar">ⓘ</button>
-      <button class="btn-icon" onclick="ShockFlip.showWorkshop()" title="Taller">🔧</button>
-      <button class="btn-icon" id="btn-stats-game" title="Estadísticas" onclick="ShockFlip.showStats()">📊</button>
-    </div>
-  </section>
-
-  <!-- Taller -->
-  <section id="workshop-section" class="hidden">
-    <div class="workshop-header">
-      <button class="btn small workshop-back-btn" id="workshop-back">← VOLVER</button>
-      <h2 class="workshop-title" id="workshop-title">TALLER</h2>
-      <div class="workshop-coins" id="workshop-bank"><span class="coins-icon">🪙</span> 0</div>
-    </div>
-    <div id="workshop-content"></div>
-  </section>
-
-  <!-- Cómo jugar -->
   <section id="howtoplay-section" class="screen" style="display:none">
     <div class="howtoplay">
-      <h2>CÓMO JUGAR</h2>
-      <h3>Objetivo</h3>
-      <p>Revela todas las casillas con <b>2</b> y <b>3</b>. No hace falta revelar los 1. <b style="color:#fff200">Evita los núcleos eléctricos (SHOCKS).</b></p>
-
-      <h3>Pistas</h3>
-      <p>Cada fila y columna muestra dos datos:</p>
-      <div class="example">
-        <p><b style="color:#e0ab4f">×N (MULTI)</b>: suma total de los valores de la línea (⚡ = 0).</p>
-        <p><b style="color:#fff200">⚡ (SHOCKS)</b>: número de núcleos eléctricos en esa línea.</p>
-        <p>Ejemplos: [1,1,2,1,1] → MULTI 6, [3,1,3,1,2] → MULTI 10</p>
+      <header class="guide-header"><div class="guide-mark">⚡</div><div><p class="guide-eyebrow">GUÍA RÁPIDA</p><h2>CÓMO JUGAR</h2><p class="guide-lead">Piensa antes de pulsar. Cada casilla puede acercarte al premio… o cortar tu racha.</p></div></header>
+      <div class="guide-grid">
+        <article class="guide-card guide-card-wide"><div class="guide-card-number">01</div><div><h3>Tu objetivo</h3><p>Revela todos los <strong>2</strong> y <strong>3</strong> del tablero. Los <strong>1</strong> son seguros y no es necesario descubrirlos.</p><div class="guide-rule"><span class="guide-bolt">⚡</span><span>Evita los núcleos eléctricos: un SHOCK termina la ronda.</span></div></div></article>
+        <article class="guide-card"><div class="guide-card-number">02</div><h3>Lee las pistas</h3><p>Cada fila y columna indica su <strong>MULTI</strong> y cuántos <strong>SHOCKS</strong> contiene.</p><div class="guide-example"><span>×6</span><small>1 + 1 + 2 + 1 + 1</small></div><div class="guide-example"><span>×10</span><small>3 + 1 + 3 + 1 + 2</small></div></article>
+        <article class="guide-card"><div class="guide-card-number">03</div><h3>Construye tu puntuación</h3><p>El primer número fija la base. Después, los 2 y 3 multiplican; los 1 no cambian el resultado.</p><div class="score-chain"><b>2</b><i>→</i><b>×6</b><i>→</i><b>×12</b><i>→</i><b>×36</b></div></article>
+        <article class="guide-card"><div class="guide-card-number">04</div><h3>Usa MEMO</h3><p>Actívalo para anotar sin revelar. Ciclo: <strong>SHOCK → 1 → 2 → 3 → limpiar</strong>.</p><span class="guide-key">M</span><span class="guide-key-hint">Clic derecho o pulsación larga elimina la marca.</span></article>
+        <article class="guide-card"><div class="guide-card-number">05</div><h3>Protege la racha</h3><p>Arma el <strong>aislante</strong> antes de arriesgarte. Neutraliza el próximo SHOCK y se consume al usarlo.</p><div class="guide-pill">🛡️ AISLANTE · 300 🪙</div></article>
+        <article class="guide-card guide-card-wide"><div class="guide-card-number">06</div><div><h3>Avanza o cobra</h3><p>Supera 8 pantallas para completar la partida. Puedes cobrar después de la primera; continuar aumenta la recompensa, pero un SHOCK borra las monedas de la partida.</p><div class="guide-levels"><span>01 NOVATO</span><span>02 RUTINA</span><span>03 VETERANO</span><span>04–08 MÁS RIESGO</span></div></div></article>
       </div>
-
-      <h3>Puntuación</h3>
-      <p>Multiplicativa: primera casilla → base. Siguientes 2 o 3 → multiplican. Los 1 no modifican.</p>
-      <div class="example">
-        <p>2 → ×2, luego 3 → ×6, luego 2 → ×12, luego 3 → ×36</p>
-        <p>⚡ Shock → puntuación de partida = 0</p>
-      </div>
-
-      <h3>MEMO</h3>
-      <p>Actívalo para marcar casillas sin revelarlas: shock → 1 → 2 → 3 → limpiar. Clic derecho quita la última marca. Mantén pulsado en táctil.</p>
-
-      <h3>Aislante anti-shock</h3>
-      <p>Ármalo en partida: el próximo shock será neutralizado. Se compra en el Taller (300 🪙) o se regala cada 3 pantallas completadas.</p>
-
-      <h3>8 pantallas</h3>
-      <p>Empiezas en NOVATO y avanzas hasta LEYENDA. Si tocas un shock habiendo destapado pocas casillas, retrocedes de pantalla.</p>
-
-      <h3>Controles</h3>
-      <p><kbd>M</kbd> — Alternar MEMO &nbsp;|&nbsp; <kbd>Esc</kbd> — Cerrar ventanas &nbsp;|&nbsp; <kbd>S</kbd> — Armar aislante</p>
-
-      <button class="btn primary" style="margin-top:16px" onclick="ShockFlip.showScreen('welcome')">VOLVER</button>
+      <footer class="guide-footer"><div><span class="guide-footer-label">ATAJOS</span><span class="guide-key">M</span> MEMO <span class="guide-key">S</span> AISLANTE <span class="guide-key">ESC</span> CERRAR</div><button class="btn primary" onclick="ShockFlip.showScreen('welcome')">VOLVER AL MENÚ</button></footer>
     </div>
   </section>
 
-  <!-- Opciones -->
-  <section id="options-section" class="screen" style="display:none">
-    <div class="options-panel">
-      <h2 class="options-title">⚙️ OPCIONES</h2>
+  <section id="options-section" class="screen" style="display:none"><div class="options-panel"><h2 class="options-title">⚙️ OPCIONES</h2><div class="options-group"><h3>🔊 Sonido</h3><p>Efectos de sonido del juego.</p><button class="btn toggle-btn" id="opt-sound"></button></div><div class="options-group"><h3>🎵 Música</h3><p>Música de fondo. Se reproducen melodías distintas en menú y partida.</p><button class="btn toggle-btn" id="opt-music"></button></div><div class="options-group"><h3>📳 Vibración</h3><p>Respuesta háptica al revelar casillas, sufrir shocks y ganar.</p><button class="btn toggle-btn" id="opt-haptics"></button></div><div class="options-group"><h3>🎨 Tema</h3><p>Oscuro, claro o automático (sigue el sistema).</p><div class="options-theme-row"><button class="btn theme-opt-btn" data-theme-mode="dark" onclick="ShockFlip.setThemeMode('dark')">🌙 Oscuro</button><button class="btn theme-opt-btn" data-theme-mode="light" onclick="ShockFlip.setThemeMode('light')">☀️ Claro</button><button class="btn theme-opt-btn" data-theme-mode="auto" onclick="ShockFlip.setThemeMode('auto')">🅰️ Auto</button></div></div><button class="btn primary" style="margin-top:20px" id="options-back">← VOLVER</button></div></section>
 
-      <div class="options-group">
-        <h3>🔊 Sonido</h3>
-        <p>Efectos de sonido del juego.</p>
-        <button class="btn toggle-btn" id="opt-sound"></button>
-      </div>
-
-      <div class="options-group">
-        <h3>🎵 Música</h3>
-        <p>Música de fondo. Se reproducen melodías distintas en menú y partida.</p>
-        <button class="btn toggle-btn" id="opt-music"></button>
-      </div>
-
-      <div class="options-group">
-        <h3>📳 Vibración</h3>
-        <p>Respuesta háptica al revelar casillas, sufrir shocks y ganar.</p>
-        <button class="btn toggle-btn" id="opt-haptics"></button>
-      </div>
-
-      <div class="options-group">
-        <h3>🎨 Tema</h3>
-        <p>Oscuro, claro o automático (sigue el sistema).</p>
-        <div class="options-theme-row">
-          <button class="btn theme-opt-btn" data-theme-mode="dark" onclick="ShockFlip.setThemeMode('dark')">🌙 Oscuro</button>
-          <button class="btn theme-opt-btn" data-theme-mode="light" onclick="ShockFlip.setThemeMode('light')">☀️ Claro</button>
-          <button class="btn theme-opt-btn" data-theme-mode="auto" onclick="ShockFlip.setThemeMode('auto')">🅰️ Auto</button>
-        </div>
-      </div>
-
-      <button class="btn primary" style="margin-top:20px" id="options-back">← VOLVER</button>
-    </div>
-  </section>
-
-  <!-- Galería de trofeos -->
-  <section id="trophies-section" class="hidden">
-    <div class="trophies-header">
-      <div class="trophies-header-top">
-        <h2 class="trophies-title">🏆 TROFEOS</h2>
-        <button class="btn small" id="trophies-back">← VOLVER</button>
-      </div>
-      <div class="trophies-header-stats">
-        <span class="trophies-progress" id="trophies-progress">0/27</span>
-        <div class="trophies-breakdown" id="trophies-breakdown"></div>
-      </div>
-    </div>
-    <div id="trophies-filter" class="trophies-filter" role="tablist" aria-label="Filtrar por rareza"></div>
-    <div id="trophies-content" class="trophies-grid"></div>
-  </section>
-
+  <section id="trophies-section" class="hidden"><div class="trophies-header"><div class="trophies-header-top"><h2 class="trophies-title">🏆 TROFEOS</h2><button class="btn small" id="trophies-back">← VOLVER</button></div><div class="trophies-header-stats"><span class="trophies-progress" id="trophies-progress">0/27</span><div class="trophies-breakdown" id="trophies-breakdown"></div></div></div><div id="trophies-filter" class="trophies-filter" role="tablist" aria-label="Filtrar por rareza"></div><div id="trophies-content" class="trophies-grid"></div></section>
 </div>
-
-<!-- Overlay modal -->
-<div id="overlay" class="overlay hidden" role="dialog" aria-modal="true">
-  <div class="overlay-card">
-    <h2 id="overlay-title" class="overlay-title"></h2>
-    <div id="overlay-body" class="overlay-body"></div>
-    <div class="overlay-actions">
-      <button id="overlay-btn1" class="btn"></button>
-      <button id="overlay-btn2" class="btn primary"></button>
-    </div>
-  </div>
-</div>
-
-<!-- Trophy alert -->
+<div id="overlay" class="overlay hidden" role="dialog" aria-modal="true"><div class="overlay-card"><h2 id="overlay-title" class="overlay-title"></h2><div id="overlay-body" class="overlay-body"></div><div class="overlay-actions"><button id="overlay-btn1" class="btn"></button><button id="overlay-btn2" class="btn primary"></button></div></div></div>
 <div id="trophy-alert" class="trophy-alert hidden"></div>
-
-<!-- Stats overlay -->
-<div id="stats-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-label="Estadísticas">
-  <div class="overlay-card stats-card">
-    <h2 class="overlay-title">📊 ESTADÍSTICAS</h2>
-    <div id="stats-body" class="stats-body"></div>
-    <div class="overlay-actions">
-      <button id="stats-close" class="btn primary">CERRAR</button>
-    </div>
-  </div>
-</div>
-
-<!-- Flash -->
-<div id="flash" class="flash"></div>
-
-<!-- Canvas particles -->
-<canvas id="bg-particles"></canvas>
-<canvas id="fx-particles"></canvas>
-
+<div id="stats-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-label="Estadísticas"><div class="overlay-card stats-card"><h2 class="overlay-title">📊 ESTADÍSTICAS</h2><div id="stats-body" class="stats-body"></div><div class="overlay-actions"><button id="stats-close" class="btn primary">CERRAR</button></div></div></div>
+<div id="flash" class="flash"></div><canvas id="bg-particles"></canvas><canvas id="fx-particles"></canvas>
 <script type="module" src="game/js/game.js?v=14"></script>
 </body>
 </html>

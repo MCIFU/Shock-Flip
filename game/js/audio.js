@@ -326,6 +326,7 @@ const MENU_TRACK = {
 
 let noteIdx = 0;
 let oldMusicGain = null;
+let previewTimer = null;
 const CROSSFADE_MS = 0.45; // segundos
 
 function resolveTrack(trackId) {
@@ -396,6 +397,27 @@ export function setTrack(trackId) {
   gameTrack = trackId || 'track1';
   // Solo reiniciar si cambió la pista de partida y estamos en contexto game
   if (musicOn && currentContext === 'game') startMusic(gameTrack);
+}
+
+// Reproduce una pista durante unos segundos sin cambiar la pista equipada ni el contexto.
+export function previewTrack(trackId, duration = 3000) {
+  const c = ensureCtx();
+  if (!c) return;
+  clearTimeout(previewTimer);
+  const wasPlaying = Boolean(musicOn && musicTimer);
+  const previousTrack = currentTrack;
+  const previousContext = currentContext;
+  // La previsualización usa temporalmente el motor normal para conservar la síntesis.
+  const previousMusicOn = musicOn;
+  musicOn = true;
+  startMusic(trackId);
+  previewTimer = setTimeout(() => {
+    previewTimer = null;
+    stopMusic();
+    musicOn = previousMusicOn;
+    currentContext = previousContext;
+    if (wasPlaying) startMusic(previousContext === 'game' ? (previousTrack || gameTrack) : 'menu');
+  }, duration);
 }
 
 export function setMusicContext(ctx) {

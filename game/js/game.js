@@ -77,7 +77,6 @@ export function init() {
     btnSonidoGame: document.getElementById('btn-sonido-game'),
     btnHapticsGame: document.getElementById('btn-haptics-game'),
     btnOpciones: document.getElementById('btn-opciones'),
-    btnReiniciar: document.getElementById('btn-reiniciar'),
     btnJugar: document.getElementById('btn-jugar'),
     btnTaller: document.getElementById('btn-taller'),
     btnComoJugar: document.getElementById('btn-como-jugar'),
@@ -895,10 +894,9 @@ function cashOut() {
 }
 
 function rendirse() {
-  if (state.level <= 1 && state.runCoins <= 0) return;
   state.rendirseStage++;
   if (state.rendirseStage === 1) {
-    dom.btnRendirse.textContent = '¿COBRAR?';
+    dom.btnRendirse.textContent = '¿SEGURO?';
     dom.btnRendirse.classList.add('confirm-stage');
     setTimeout(() => {
       if (state.rendirseStage === 1) {
@@ -906,7 +904,8 @@ function rendirse() {
         updateRendirseBtn();
       }
     }, 3000);
-  } else if (state.rendirseStage >= 2) {
+  } else {
+    // Segunda pulsación confirma: cobra y la siguiente partida empieza en nivel 1.
     cashOut();
     state.rendirseStage = 0;
   }
@@ -914,30 +913,10 @@ function rendirse() {
 
 function updateRendirseBtn() {
   if (!dom.btnRendirse) return;
-  if (state.level <= 1 || state.hasWonScreen) {
-    dom.btnRendirse.style.display = 'none';
-  } else {
-    dom.btnRendirse.style.display = '';
-    dom.btnRendirse.textContent = 'RENDIRSE';
-    dom.btnRendirse.classList.remove('confirm-stage');
-    state.rendirseStage = 0;
-  }
-}
-
-// Botón REINICIAR — regenera la pantalla actual, manteniendo el run acumulado
-function reiniciar() {
-  clearTimeout(state.defeatTimer);
-  state.defeatPending = false;
-  dom.boardArea?.classList.remove('board-locked');
-  state.screenCoins = 0;
-  state.score = 0;
-  state.shieldMgr.armed = false;
+  dom.btnRendirse.style.display = '';
+  dom.btnRendirse.textContent = 'RENDIRSE';
+  dom.btnRendirse.classList.remove('confirm-stage');
   state.rendirseStage = 0;
-  state.salirStage = 0;
-  state.hasWonScreen = false;
-  generateScreen();
-  updateHUD();
-  Audio.sfx('click');
 }
 
 // Botón SALIR
@@ -1213,14 +1192,6 @@ function renderWorkshop() {
   sections.push(`</div>`);
   sections.push(`<p class="shop-hint">Elige la pista que sonará durante las partidas. En el menú suena una melodía ambiental distinta.</p></div>`);
 
-  // 7.1b Sonido y háptica
-  sections.push(`<div class="shop-section"><h3>📳 Audio y vibración</h3>`);
-  sections.push(`<div class="shop-grid-2">`);
-  sections.push(`<button class="shop-btn ${state.soundOn ? 'equipped' : ''}" data-action="toggle-sound">${state.soundOn ? '🔊' : '🔇'} Sonido ${state.soundOn ? 'ON' : 'OFF'}</button>`);
-  sections.push(`<button class="shop-btn ${state.hapticsOn ? 'equipped' : ''}" data-action="toggle-haptics">${state.hapticsOn ? '📳' : '🚫'} Vibrar ${state.hapticsOn ? 'ON' : 'OFF'}</button>`);
-  sections.push(`</div>`);
-  sections.push(`<p class="shop-hint">El sonido controla efectos y música. La vibración se siente al revelar casillas, sufrir shocks y ganar.</p></div>`);
-
   // 7.2 Temas de tablero
   sections.push(`<div class="shop-section"><h3>🎨 Temas de tablero</h3>`);
   for (const [id, theme] of Object.entries(THEMES)) {
@@ -1315,16 +1286,11 @@ function renderWorkshop() {
       const action = btn.dataset.action;
       const id = btn.dataset.id;
       switch (action) {
-        case 'toggle-sound':
-          toggleSound();
-          break;
-        case 'toggle-haptics':
-          toggleHaptics();
-          break;
         case 'music':
           Audio.setTrack(id);
           saveMusic(id);
           Audio.setMusic(state.musicOn);
+          Audio.previewTrack(id, 3000);
           Audio.sfx('equip');
           renderWorkshop();
           break;
@@ -1558,12 +1524,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ─── Exportar para acceso global desde HTML (eventos inline) ───
-window.ShockFlip = {
-  rendirse, reiniciar, salir, toggleMemo, toggleShield, toggleSound, toggleHaptics, toggleTheme, setThemeMode, startGame,
+window.ShockFlip = {    rendirse, salir, toggleMemo, toggleShield, toggleSound, toggleHaptics, toggleTheme, setThemeMode, startGame, nextScreen,
   showWorkshop, showHowToPlay, closeOverlay, handleOverlay,
   showStats, hideStats, showTrophies, showScreen,
 };
 
 export {
-  state, startGame, generateScreen, reveal, handleWin, cashOut, rendirse, toggleMemo, toggleShield,
+  state, startGame, generateScreen, reveal, handleWin, cashOut, nextScreen, rendirse, toggleMemo, toggleShield,
 };
