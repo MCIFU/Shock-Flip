@@ -173,7 +173,7 @@ const SCREEN_ELEMENTS = {
   options: 'options-section',
 };
 
-function showScreen(name) {
+export function showScreen(name) {
   if (name !== 'welcome') stopFuseSparks();
 
   const targetId = SCREEN_ELEMENTS[name];
@@ -194,7 +194,9 @@ function showScreen(name) {
 
   // Close overlays immediately
   dom.overlay?.classList.add('hidden');
-  dom.trophyAlert?.classList.add('hidden');
+  // Las notificaciones de trofeos deben sobrevivir al cambio de pantalla;
+  // se ocultan solo cuando la cola termina o al iniciar una nueva partida.
+  if (name !== 'welcome' || trophyQueue.length === 0) dom.trophyAlert?.classList.add('hidden');
   dom.flash?.classList.remove('active');
 
   // Fade out current screen
@@ -736,10 +738,20 @@ function queueTrophy(trophy) {
   if (trophyQueue.length === 1) showNextTrophy();
 }
 
+// Hook de prueba manual: usa la misma cola y render que los trofeos reales.
+export function queueTrophyForTest(trophy) {
+  queueTrophy(trophy);
+}
+
 function showNextTrophy() {
-  if (trophyQueue.length === 0) return;
+  if (trophyQueue.length === 0) {
+    dom.trophyAlert?.classList.remove('active');
+    dom.trophyAlert?.classList.add('hidden');
+    return;
+  }
   const t = trophyQueue[0];
   const tier = TROPHY_TIERS[t.tier] || TROPHY_TIERS.bronze;
+  if (!dom.trophyAlert) return;
   dom.trophyAlert.innerHTML = `
     <div class="trophy-card tier-${t.tier}" style="--tier-color:${tier.color}">
       <div class="trophy-icon">${tier.icon}</div>
@@ -755,12 +767,13 @@ function showNextTrophy() {
   const cy = rect.top + rect.height / 2;
   celebrateTrophy(t.tier, cx, cy, dom);
 
+  // Aviso breve y no bloqueante: permite encadenar varios trofeos sin tapar el tablero.
   setTimeout(() => {
     dom.trophyAlert.classList.remove('active');
     dom.trophyAlert.classList.add('hidden');
     trophyQueue.shift();
-    setTimeout(() => showNextTrophy(), 300);
-  }, 3200);
+    showNextTrophy();
+  }, 1500);
 }
 
 // ─── Overlays ───
@@ -879,6 +892,8 @@ function nextScreen() {
 
 function cashOut() {
   Audio.sfx('cash');
+  // Commit any uncommitted screen coins before cashing out
+  state.runCoins += state.screenCoins;
   const earned = Logic.cashOutEarned(state);
   if (earned >= 100) state.stats.rendirseOver100 = true;
   state.stats.totalRendirse++;
@@ -1141,6 +1156,30 @@ function renderOptions() {
     hapticsBtn.onclick = () => toggleHaptics();
   }
 
+  // Reinicio protegido: primera pulsación pide confirmación; la segunda confirma.
+  const resetBtn = document.getElementById('opt-reset-progress');
+  if (resetBtn) {
+    resetBtn.textContent = resetBtn.dataset.confirm === 'true' ? '¿SEGURO?' : 'REINICIAR PROGRESO';
+    resetBtn.className = 'btn danger-btn' + (resetBtn.dataset.confirm === 'true' ? ' confirm-stage' : '');
+    resetBtn.onclick = () => {
+      if (resetBtn.dataset.confirm !== 'true') {
+        resetBtn.dataset.confirm = 'true';
+        resetBtn.textContent = '¿SEGURO?';
+        resetBtn.classList.add('confirm-stage');
+        clearTimeout(resetBtn._confirmTimer);
+        resetBtn._confirmTimer = setTimeout(() => {
+          resetBtn.dataset.confirm = 'false';
+          resetBtn.textContent = 'REINICIAR PROGRESO';
+          resetBtn.classList.remove('confirm-stage');
+        }, 3000);
+        return;
+      }
+      clearTimeout(resetBtn._confirmTimer);
+      resetBtn.dataset.confirm = 'false';
+      resetProgress();
+    };
+  }
+
   // Botones de tema
   document.querySelectorAll('.theme-opt-btn').forEach(btn => {
     const mode = btn.dataset.themeMode;
@@ -1151,6 +1190,27 @@ function renderOptions() {
   });
 
   updateSoundBtn();
+}
+
+function resetProgress() {
+  state.bankCoins = 0;
+  state.collection = loadCollection();
+  state.collection.owned = [];
+  state.collection.trophies = [];
+  state.collection.shields = 0;
+  state.stats = { ...DEFAULT_STATS };
+  state.runCoins = 0;
+  state.screenCoins = 0;
+  state.runStreak = 0;
+  state.level = 1;
+  state.rendirseStage = 0;
+  state.salirStage = 0;
+  saveCoins(0);
+  saveCollection(state.collection);
+  saveStats(state.stats);
+  renderOptions();
+  updateHUD();
+  Audio.sfx('click');
 }
 
 function setThemeMode(mode) {
@@ -1181,16 +1241,14 @@ function renderWorkshop() {
 
   const sections = [];
 
-  // 7.1 Música
+  // 7.1 Música de partida
   sections.push(`<div class="shop-section"><h3>🎵 Música de partida</h3>`);
   sections.push(`<div class="shop-grid-2">`);
-  const tracks = Audio.TRACKS;
-  for (const [id, t] of Object.entries(tracks)) {
+  for (const [id, t] of Object.entries(Audio.TRACKS)) {
     const active = Audio.getTrack() === id;
-    sections.push(`<button class="shop-btn ${active ? 'equipped' : ''}" data-action="music" data-id="${id}">${active ? '▶ ' : ''}${t.name}</button>`);
+    sections.push(`<button class="shop-btn ${active ? 'equipped' : ''}" data-action="music" data-id="${id}">${active ? '▶ ' : ''}${t.name}<small class="track-mood">${id === 'track1' ? 'tranquila' : id === 'track2' ? 'animada' : id === 'track3' ? 'ambiental' : 'progresiva'}</small></button>`);
   }
-  sections.push(`</div>`);
-  sections.push(`<p class="shop-hint">Elige la pista que sonará durante las partidas. En el menú suena una melodía ambiental distinta.</p></div>`);
+  sections.push(`</div><p class="shop-hint">Elige la música de tus partidas. Escucharás una previa de 3 segundos al seleccionar una pista.</p></div>`);
 
   // 7.2 Temas de tablero
   sections.push(`<div class="shop-section"><h3>🎨 Temas de tablero</h3>`);
@@ -1289,7 +1347,6 @@ function renderWorkshop() {
         case 'music':
           Audio.setTrack(id);
           saveMusic(id);
-          Audio.setMusic(state.musicOn);
           Audio.previewTrack(id, 3000);
           Audio.sfx('equip');
           renderWorkshop();
@@ -1450,20 +1507,6 @@ function applySkin(id) {
 }
 
 // ─── Stats overlay ───
-function statsSettingsRow() {
-  const ss = state.soundOn ? 'on' : 'off';
-  const hs = state.hapticsOn ? 'on' : 'off';
-  const ms = state.musicOn ? 'on' : 'off';
-  const ts = state.themeMode === 'auto' ? '🅰️ Auto' : (state.darkTheme ? '🌙 Oscuro' : '☀️ Claro');
-  return `
-    <div class="stats-row settings-pills">
-      <div class="settings-chip ${ss}"><span class="chip-icon">${ss === 'on' ? '🔊' : '🔇'}</span> Sonido: ${ss === 'on' ? 'Sí' : 'No'}</div>
-      <div class="settings-chip ${hs}"><span class="chip-icon">${hs === 'on' ? '📳' : '🚫'}</span> Vibración: ${hs === 'on' ? 'Sí' : 'No'}</div>
-      <div class="settings-chip ${ms}"><span class="chip-icon">${ms === 'on' ? '🎵' : '🔕'}</span> Música: ${ms === 'on' ? 'Sí' : 'No'}</div>
-      <div class="settings-chip on"><span class="chip-icon">🎨</span> ${ts}</div>
-    </div>`;
-}
-
 function showStats() {
   state.stats = loadStats();
   state.collection = loadCollection();
@@ -1471,27 +1514,22 @@ function showStats() {
   const s = state.stats;
   const trophies = state.collection.trophies || [];
   const medals = state.collection.owned || [];
-  const coins = loadCoins();
 
   const items = [
     { label: 'Pantallas ganadas', value: s.screensWon, cls: '' },
     { label: 'Shocks sufridos', value: s.bombsHit, cls: 'dim' },
-    { label: 'Mejor nivel', value: LEVELS.find(l => l.id === s.bestLevel)?.name || s.bestLevel, cls: '' },
+    { label: 'Mejor nivel', value: s.bestLevel > 0 ? `Nivel ${s.bestLevel}` : '—', cls: '' },
     { label: 'Racha actual', value: s.streak, cls: 'amber' },
     { label: 'Mejor racha', value: s.bestStreak, cls: 'amber' },
     { label: 'Partidas jugadas', value: s.gamesPlayed, cls: 'dim' },
-    { label: 'Veces cobrado', value: s.totalRendirse, cls: 'dim' },
-    { label: 'Seguros usados', value: s.shieldsUsed, cls: 'dim' },
     { label: 'Monedas ganadas', value: s.totalCoinsEarned, cls: '' },
-    { label: 'Multi récord', value: s.highestMulti > 0 ? `×${s.highestMulti}` : '—', cls: 'amber' },
-    { label: 'Banco actual', value: coins, cls: '' },
     { label: 'Trofeos', value: `${trophies.length}/${TROPHIES.length}`, cls: 'amber' },
     { label: 'Medallas', value: `${medals.length}/7`, cls: '' },
   ];
 
   dom.statsBody.innerHTML = items.map(i =>
     `<div class="stat-box${i.cls ? ' highlight' : ''}"><div class="stat-box-title">${i.label}</div><div class="stat-box-value${i.cls ? ' ' + i.cls : ''}">${i.value}</div></div>`
-  ).join('') + statsSettingsRow();
+  ).join('');
 
   dom.statsOverlay.classList.remove('hidden');
   Audio.sfx('click');
@@ -1524,9 +1562,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ─── Exportar para acceso global desde HTML (eventos inline) ───
-window.ShockFlip = {    rendirse, salir, toggleMemo, toggleShield, toggleSound, toggleHaptics, toggleTheme, setThemeMode, startGame, nextScreen,
+window.ShockFlip = {    rendirse, salir, toggleMemo, toggleShield, toggleSound, toggleHaptics, toggleTheme, setThemeMode, resetProgress, startGame, nextScreen,
   showWorkshop, showHowToPlay, closeOverlay, handleOverlay,
-  showStats, hideStats, showTrophies, showScreen,
+  showStats, hideStats, showTrophies, showScreen, queueTrophyForTest,
 };
 
 export {

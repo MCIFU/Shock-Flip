@@ -66,7 +66,7 @@ describe('Simulation', () => {
   });
 
   describe('Economy (coins per hour)', () => {
-    it('should be between 74 and 819 per simulated hour', () => {
+    it('should be between 25 and 1600 per simulated hour', () => {
       let totalCoins = 0;
       let gamesPlayed = 0;
       let screensWon = 0;
@@ -96,7 +96,8 @@ describe('Simulation', () => {
       // But our simulation does 200 games; scale to per-hour
       const perHour = totalCoins * (120 / gamesPlayed);
       assert.ok(perHour >= 25, `Coins per hour ${perHour.toFixed(0)} < 25`);
-      assert.ok(perHour <= 800, `Coins per hour ${perHour.toFixed(0)} > 800`);
+      // Upper bound raised after early levels were made easier (more coins/hour)
+      assert.ok(perHour <= 1600, `Coins per hour ${perHour.toFixed(0)} > 1600`);
     });
   });
 });
