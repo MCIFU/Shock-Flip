@@ -6,6 +6,7 @@ export const KEYS = {
   music: 'bombflip:music',
   musicOn: 'bombflip:musicOn',
   theme: 'bombflip:theme',
+  language: 'bombflip:language',
   collection: 'bombflip:collection',
   stats: 'bombflip:stats',
   boardSize: 'bombflip:boardsize',

@@ -22,8 +22,8 @@ import { MEDALS } from '../game/js/collection.js';
 
 describe('Rarity', () => {
   describe('purchaseMedal', () => {
-    const cheapMedal = { id: 'medal_cobre', cost: 100, emoji: '🥉', tier: 'bronze' };
-    const priceyMedal = { id: 'medal_obsidiana', cost: 3000, emoji: '🖤', tier: 'legendary' };
+    const cheapMedal = { id: 'medal_cobre', cost: 250, emoji: '🥉', tier: 'bronze' };
+    const priceyMedal = { id: 'medal_obsidiana', cost: 8000, emoji: '🖤', tier: 'legendary' };
 
     it('should reject null/undefined medal', () => {
       assert.deepEqual(purchaseMedal(null, 500, { owned: [] }), { ok: false });
@@ -43,7 +43,7 @@ describe('Rarity', () => {
     });
 
     it('should accept purchase with exact coins', () => {
-      const result = purchaseMedal(cheapMedal, 100, { owned: [] });
+      const result = purchaseMedal(cheapMedal, 250, { owned: [] });
       assert.equal(result.ok, true);
       assert.equal(result.bankCoins, 0);
       assert.deepEqual(result.owned, ['medal_cobre']);
@@ -53,12 +53,12 @@ describe('Rarity', () => {
     it('should return correct change', () => {
       const result = purchaseMedal(cheapMedal, 500, { owned: [] });
       assert.equal(result.ok, true);
-      assert.equal(result.bankCoins, 400);
+      assert.equal(result.bankCoins, 250);
     });
 
     it('should append to existing owned array (copied, not mutated)', () => {
       const orig = { owned: ['medal_plata'] };
-      const result = purchaseMedal(cheapMedal, 200, orig);
+      const result = purchaseMedal(cheapMedal, 300, orig);
       assert.equal(result.ok, true);
       assert.deepEqual(result.owned, ['medal_plata', 'medal_cobre']);
       // Original must not be mutated
@@ -67,7 +67,7 @@ describe('Rarity', () => {
     });
 
     it('should handle collection with no owned key at all', () => {
-      const result = purchaseMedal(cheapMedal, 200, {});
+      const result = purchaseMedal(cheapMedal, 300, {});
       assert.equal(result.ok, true);
       assert.deepEqual(result.owned, ['medal_cobre']);
     });
@@ -76,7 +76,7 @@ describe('Rarity', () => {
       // 6 medals already owned → buying the 7th triggers allMedals
       const sixOwned = MEDALS.filter(m => m.id !== priceyMedal.id).map(m => m.id);
       assert.equal(sixOwned.length, MEDALS.length - 1);
-      const result = purchaseMedal(priceyMedal, 3000, { owned: sixOwned });
+      const result = purchaseMedal(priceyMedal, 8000, { owned: sixOwned });
       assert.equal(result.ok, true);
       assert.equal(result.allMedals, true);
       assert.deepEqual(result.owned, MEDALS.map(m => m.id));

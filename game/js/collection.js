@@ -191,23 +191,23 @@ export const SKINS = {
 
 // ─── Medallas de vitrina (comprables) ───
 export const MEDALS = [
-  { id: 'medal_cobre', name: 'Medalla de Cobre', cost: 100, emoji: '🥉', tier: 'bronze' },
-  { id: 'medal_plata', name: 'Medalla de Plata', cost: 250, emoji: '🥈', tier: 'silver' },
-  { id: 'medal_oro', name: 'Medalla de Oro', cost: 500, emoji: '🥇', tier: 'gold' },
-  { id: 'medal_zafiro', name: 'Medalla de Zafiro', cost: 800, emoji: '💎', tier: 'gold' },
-  { id: 'medal_rubi', name: 'Medalla de Rubí', cost: 1200, emoji: '🔴', tier: 'legendary' },
-  { id: 'medal_diamante', name: 'Medalla de Diamante', cost: 2000, emoji: '💠', tier: 'legendary' },
-  { id: 'medal_obsidiana', name: 'Medalla de Obsidiana', cost: 3000, emoji: '🖤', tier: 'legendary' },
+  { id: 'medal_cobre', name: 'Medalla de Cobre', cost: 250, emoji: '🥉', tier: 'bronze' },
+  { id: 'medal_plata', name: 'Medalla de Plata', cost: 600, emoji: '🥈', tier: 'silver' },
+  { id: 'medal_oro', name: 'Medalla de Oro', cost: 1200, emoji: '🥇', tier: 'gold' },
+  { id: 'medal_zafiro', name: 'Medalla de Zafiro', cost: 2000, emoji: '💎', tier: 'gold' },
+  { id: 'medal_rubi', name: 'Medalla de Rubí', cost: 3200, emoji: '🔴', tier: 'legendary' },
+  { id: 'medal_diamante', name: 'Medalla de Diamante', cost: 5200, emoji: '💠', tier: 'legendary' },
+  { id: 'medal_obsidiana', name: 'Medalla de Obsidiana', cost: 8000, emoji: '🖤', tier: 'legendary' },
 ];
 
 // ─── Trofeos de mérito ───
 // Se ganan jugando, no se compran. Cada trofeo tiene un id, un name y una check function.
 // ─── Rareza de trofeos ───
 export const TROPHY_TIERS = {
-  bronze: { label: 'Bronce', icon: '🥉', color: '#cd7f32' },
-  silver: { label: 'Plata', icon: '🥈', color: '#c8ccd4' },
-  gold: { label: 'Oro', icon: '🥇', color: '#ffd700' },
-  legendary: { label: 'Legendario', icon: '💎', color: '#b388ff' },
+  bronze: { label: 'Bronce', labelEn: 'Bronze', icon: '🥉', color: '#cd7f32' },
+  silver: { label: 'Plata', labelEn: 'Silver', icon: '🥈', color: '#c8ccd4' },
+  gold: { label: 'Oro', labelEn: 'Gold', icon: '🥇', color: '#ffd700' },
+  legendary: { label: 'Legendario', labelEn: 'Legendary', icon: '💎', color: '#b388ff' },
 };
 
 export const TROPHIES = [
@@ -352,6 +352,16 @@ export function loadTheme() {
 
 export function saveTheme(mode) {
   localStorage.setItem(KEYS.theme, mode === 'dark' || mode === 'light' ? mode : 'auto');
+}
+
+export function loadLanguage() {
+  const saved = localStorage.getItem(KEYS.language);
+  if (saved === 'es' || saved === 'en') return saved;
+  return navigator.language?.toLowerCase().startsWith('es') ? 'es' : 'en';
+}
+
+export function saveLanguage(language) {
+  localStorage.setItem(KEYS.language, language === 'en' ? 'en' : 'es');
 }
 
 // ─── Check and award trophies ───

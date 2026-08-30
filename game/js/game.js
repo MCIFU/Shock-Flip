@@ -11,7 +11,7 @@ import {
 import {
   loadCoins, saveCoins, loadCollection, saveCollection,
   loadStats, saveStats, loadSound, saveSound, loadHaptics, saveHaptics, loadMusic, saveMusic, loadMusicOn, saveMusicOn,
-  loadTheme, saveTheme,
+  loadTheme, saveTheme, loadLanguage, saveLanguage,
   checkTrophies, ShieldManager, THEMES, SKINS, MEDALS, isUnlocked,
   TROPHIES, TROPHY_TIERS,
 } from './collection.js';
@@ -38,6 +38,7 @@ let state = {
   hapticsOn: true,
   musicOn: false,
   themeMode: 'auto',    // 'auto' | 'dark' | 'light'
+  language: 'es',       // 'es' | 'en'
   darkTheme: true,      // booleano resuelto (resultado final)
   shieldMgr: new ShieldManager(),
   hasWonScreen: false,
@@ -106,6 +107,7 @@ export function init() {
   state.stats = loadStats();
   state.soundOn = loadSound();
   state.hapticsOn = loadHaptics();
+  state.language = loadLanguage();
   Haptic.setEnabled(state.hapticsOn);
   state.themeMode = loadTheme();
   state.darkTheme = resolveTheme(state.themeMode);
@@ -115,6 +117,7 @@ export function init() {
   applyThemeDOM();
   state.musicOn = loadMusicOn();
   applyThemeDOM();
+  applyLanguage();
   Audio.initAudio();
   Audio.setSound(state.soundOn);
   Audio.setTrack(loadMusic());
@@ -191,6 +194,14 @@ export function showScreen(name) {
 
   // Cancel any pending hide from a previous transition
   if (screenTransitionTimer) { clearTimeout(screenTransitionTimer); screenTransitionTimer = null; }
+  const routeLoader = document.getElementById('route-loading');
+  const useRouteLoader = (state.screen !== name) && ['welcome', 'game', 'workshop', 'howtoplay'].includes(state.screen) && ['welcome', 'game', 'workshop', 'howtoplay'].includes(name);
+  if (useRouteLoader && routeLoader) {
+    routeLoader.classList.remove('active');
+    void routeLoader.offsetWidth;
+    routeLoader.classList.add('active');
+    setTimeout(() => routeLoader.classList.remove('active'), 420);
+  }
 
   // Close overlays immediately
   dom.overlay?.classList.add('hidden');
@@ -241,12 +252,9 @@ function updateHUD() {
   if (dom.hudBank) dom.hudBank.textContent = state.bankCoins;
   // Monedas de la partida + multiplicador de racha aplicado a la pantalla actual
   if (dom.hudRun) dom.hudRun.textContent = state.runCoins + state.screenCoins;
-  if (dom.hudStreak) {
-    const mult = Logic.streakMultiplier(state.runStreak + 1);
-    dom.hudStreak.textContent = state.runStreak >= 1 ? `RACHA ×${mult.toFixed(2)}` : 'RACHA —';
-    dom.hudStreak.classList.toggle('streak-active', state.runStreak >= 1);
-  }
   if (dom.hudMult) dom.hudMult.textContent = state.score > 0 ? `×${state.score}` : '—';
+  const status = document.getElementById('status-bar');
+  if (status && state.screen === 'game') updateStatusBar();
   if (dom.bankWelcome) dom.bankWelcome.textContent = state.bankCoins;
   updateWelcomeTrophies();
   updateSoundBtn();
@@ -293,17 +301,17 @@ function updateShieldBtn() {
   if (shields <= 0 && !armed) {
     // Sin seguros: gris apagado, deshabilitado
     dom.btnShield.classList.add('shield-empty');
-    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>AISLANTE</span><span class="shield-count">0</span>`;
+    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>${state.language === 'en' ? 'SHIELD' : 'AISLANTE'}</span><span class="shield-count">0</span>`;
     dom.btnShield.title = 'Sin seguros. Compra en el Taller o gana 3 pantallas.';
   } else if (!armed) {
     // Con seguros, sin armar: ámbar pulsante + badge LISTO
     dom.btnShield.classList.add('shield-pulse');
-    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>AISLANTE</span><span class="shield-count">${shields}</span><span class="shield-badge badge-ready">LISTO</span>`;
+    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>${state.language === 'en' ? 'SHIELD' : 'AISLANTE'}</span><span class="shield-count">${shields}</span><span class="shield-badge badge-ready">${state.language === 'en' ? 'READY' : 'LISTO'}</span>`;
     dom.btnShield.title = `Tienes ${shields} seguro${shields > 1 ? 's' : ''}. Toca para armar y neutralizar la próxima descarga.`;
   } else {
     // Armado: cian brillante fijo + badge ACTIVO
     dom.btnShield.classList.add('shield-armed');
-    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>AISLANTE</span><span class="shield-count">${shields}</span><span class="shield-badge badge-on">ACTIVO</span>`;
+    dom.btnShield.innerHTML = `<span class="shield-icon">🛡️</span><span>${state.language === 'en' ? 'SHIELD' : 'AISLANTE'}</span><span class="shield-count">${shields}</span><span class="shield-badge badge-on">${state.language === 'en' ? 'ACTIVE' : 'ACTIVO'}</span>`;
     dom.btnShield.title = 'Seguro ARMADO: la próxima descarga será neutralizada. Toca para desarmar.';
   }
 }
@@ -778,10 +786,10 @@ function showNextTrophy() {
 
 // ─── Overlays ───
 function showOverlayWin() {
-  dom.overlayTitle.textContent = `¡PANTALLA ${state.level} SUPERADA!`;
+  dom.overlayTitle.textContent = localizeText(`¡PANTALLA ${state.level} SUPERADA!`, `LEVEL ${state.level} CLEARED!`);
   const streakMult = Logic.streakMultiplier(state.runStreak);
   const streakLine = state.runStreak >= 2
-    ? `<div class="overlay-streak">🔥 RACHA ×${streakMult.toFixed(2)} · ${state.runStreak} seguidas</div>`
+    ? `<div class="overlay-streak">⚡ PROGRESO ×${streakMult.toFixed(2)} · ${state.runStreak} pantallas seguidas</div>`
     : '';
   const farmLine = state.stats?.bestLevel > state.level
     ? `<div class="overlay-farm">⬇ Pantalla repetida (mejor: ${state.stats.bestLevel})</div>`
@@ -793,9 +801,9 @@ function showOverlayWin() {
     ${streakLine}
     ${farmLine}
     <p class="overlay-note">En juego (racha incluida): ${state.runCoins}</p>`;
-  dom.overlayBtn1.textContent = 'COBRAR';
+  dom.overlayBtn1.textContent = localizeText('COBRAR', 'CASH OUT');
   dom.overlayBtn1.className = 'btn primary';
-  dom.overlayBtn2.textContent = 'SIGUIENTE';
+  dom.overlayBtn2.textContent = localizeText('SIGUIENTE', 'NEXT');
   dom.overlayBtn2.className = 'btn gold';
   dom.overlay.dataset.action = 'win';
   dom.overlay.querySelector('.overlay-card')?.classList.remove('defeat');
@@ -806,14 +814,14 @@ function showOverlayWin() {
 }
 
 function showOverlayDefeat() {
-  dom.overlayTitle.textContent = '¡SHOCK!';
+  dom.overlayTitle.textContent = 'SHOCK!';
   dom.overlayBody.innerHTML = `
     <div class="overlay-shock">${svg_shock_icon}</div>
     <p class="overlay-note">Las monedas de esta partida se pierden.</p>
     <p class="overlay-note">El banco está a salvo.</p>`;
-  dom.overlayBtn1.textContent = 'MENÚ';
+  dom.overlayBtn1.textContent = localizeText('MENÚ', 'MENU');
   dom.overlayBtn1.className = 'btn';
-  dom.overlayBtn2.textContent = 'REINTENTAR';
+  dom.overlayBtn2.textContent = localizeText('REINTENTAR', 'RETRY');
   dom.overlayBtn2.className = 'btn primary';
   dom.overlay.dataset.action = 'defeat';
   dom.overlay.querySelector('.overlay-card')?.classList.add('defeat');
@@ -827,7 +835,7 @@ function showOverlayFinal(earned) {
     <p style="color:#ecc986;text-align:center;font-size:1.2em">¡Has completado todas las pantallas!</p>`;
   dom.overlayBtn1.textContent = 'TALLER';
   dom.overlayBtn1.className = 'btn';
-  dom.overlayBtn2.textContent = 'MENÚ';
+  dom.overlayBtn2.textContent = localizeText('MENÚ', 'MENU');
   dom.overlayBtn2.className = 'btn primary';
   dom.overlay.dataset.action = 'final';
   dom.overlay.querySelector('.overlay-card')?.classList.remove('defeat');
@@ -837,11 +845,11 @@ function showOverlayFinal(earned) {
 }
 
 function showOverlayCashout(earned) {
-  dom.overlayTitle.textContent = '💸 ¡COBRADO!';
+  dom.overlayTitle.textContent = localizeText('💸 ¡COBRADO!', '💸 CASHED OUT!');
   dom.overlayBody.innerHTML = Logic.cashoutOverlayHTML(earned, state.bankCoins);
   dom.overlayBtn1.textContent = '';
   dom.overlayBtn1.className = 'btn hidden-btn';
-  dom.overlayBtn2.textContent = 'AL MENÚ';
+  dom.overlayBtn2.textContent = localizeText('AL MENÚ', 'TO MENU');
   dom.overlayBtn2.className = 'btn primary';
   dom.overlay.dataset.action = 'cashout';
   dom.overlay.querySelector('.overlay-card')?.classList.remove('defeat');
@@ -911,7 +919,7 @@ function cashOut() {
 function rendirse() {
   state.rendirseStage++;
   if (state.rendirseStage === 1) {
-    dom.btnRendirse.textContent = '¿SEGURO?';
+    dom.btnRendirse.textContent = state.language === 'en' ? 'ARE YOU SURE?' : '¿SEGURO?';
     dom.btnRendirse.classList.add('confirm-stage');
     setTimeout(() => {
       if (state.rendirseStage === 1) {
@@ -929,7 +937,7 @@ function rendirse() {
 function updateRendirseBtn() {
   if (!dom.btnRendirse) return;
   dom.btnRendirse.style.display = '';
-  dom.btnRendirse.textContent = 'RENDIRSE';
+  dom.btnRendirse.textContent = t('cashOut');
   dom.btnRendirse.classList.remove('confirm-stage');
   state.rendirseStage = 0;
 }
@@ -938,7 +946,7 @@ function updateRendirseBtn() {
 function salir() {
   state.salirStage++;
   if (state.salirStage === 1) {
-    dom.btnSalir.textContent = '¿SEGURO?';
+    dom.btnSalir.textContent = state.language === 'en' ? 'ARE YOU SURE?' : '¿SEGURO?';
     dom.btnSalir.classList.add('confirm-stage');
     setTimeout(() => {
       if (state.salirStage === 1) {
@@ -960,7 +968,7 @@ function salir() {
 
 function updateSalirBtn() {
   if (!dom.btnSalir) return;
-  dom.btnSalir.textContent = 'SALIR';
+  dom.btnSalir.textContent = t('exit');
   dom.btnSalir.classList.remove('confirm-stage');
   state.salirStage = 0;
 }
@@ -968,7 +976,7 @@ function updateSalirBtn() {
 function toggleMemo() {
   state.memoMode = !state.memoMode;
   if (dom.btnMemo) {
-    dom.btnMemo.textContent = state.memoMode ? '✎ MEMO: 💣 1 2 3' : '✎ MEMO';
+    dom.btnMemo.textContent = state.memoMode ? `✎ ${t('memo')}: ⚡ 1 2 3` : `✎ ${t('memo')}`;
     dom.btnMemo.classList.toggle('memo-active', state.memoMode);
     dom.btnMemo.setAttribute('aria-pressed', state.memoMode);
   }
@@ -1051,13 +1059,13 @@ function updateStatusBar() {
   if (!dom.statusBar) return;
   const remaining = state.target - state.found;
   if (state.memoMode) {
-    dom.statusBar.textContent = `✎ MEMO activo: toca para marcar 💣 → 1 → 2 → 3 → limpiar · Quedan ${remaining}`;
+    dom.statusBar.textContent = localizeText(`✎ MEMO activo: toca para marcar ⚡ → 1 → 2 → 3 → limpiar · Quedan ${remaining}`, `✎ MEMO active: tap to mark ⚡ → 1 → 2 → 3 → clear · ${remaining} left`);
   } else if (state.shieldMgr?.armed) {
-    dom.statusBar.textContent = `🛡️ AISLANTE ARMADO: la próxima descarga se neutraliza · Quedan ${remaining}`;
+    dom.statusBar.textContent = localizeText(`🛡️ AISLANTE ARMADO: la próxima descarga se neutraliza · Quedan ${remaining}`, `🛡️ SHIELD ARMED: the next shock is neutralized · ${remaining} left`);
     dom.statusBar.classList.add('status-shield-armed');
     return;
   } else {
-    dom.statusBar.textContent = `Revela los multiplicadores · Quedan ${remaining}`;
+    dom.statusBar.textContent = localizeText(`Revela los multiplicadores · Quedan ${remaining}`, `Reveal the multipliers · ${remaining} left`);
   }
   dom.statusBar.classList.remove('status-shield-armed');
 }
@@ -1126,11 +1134,47 @@ function stopFuseSparks() {
 }
 
 // ─── Opciones ───
+const ITEM_TRANSLATIONS = { es: { taller:'Taller', medianoche:'Medianoche', solar:'Solar', verde:'Verde', rojo:'Rojo', leyenda:'Leyenda', clasico:'Clásico', brasa:'Brasa', hielo:'Hielo', obsidiana:'Obsidiana', jade:'Jade', cosmos:'Cosmos', medal_cobre:'Medalla de Cobre', medal_plata:'Medalla de Plata', medal_oro:'Medalla de Oro', medal_zafiro:'Medalla de Zafiro', medal_rubi:'Medalla de Rubí', medal_diamante:'Medalla de Diamante', medal_obsidiana:'Medalla de Obsidiana' }, en: { taller:'Workshop', medianoche:'Midnight', solar:'Solar', verde:'Green', rojo:'Red', leyenda:'Legend', clasico:'Classic', brasa:'Ember', hielo:'Ice', obsidiana:'Obsidian', jade:'Jade', cosmos:'Cosmos', medal_cobre:'Copper Medal', medal_plata:'Silver Medal', medal_oro:'Gold Medal', medal_zafiro:'Sapphire Medal', medal_rubi:'Ruby Medal', medal_diamante:'Diamond Medal', medal_obsidiana:'Obsidian Medal' } };
+function itemText(id, fallback) { return ITEM_TRANSLATIONS[state.language]?.[id] || fallback; }
+const TROPHY_EN = { trophy_first:['First Screen','Complete your first screen'], trophy_10:['10 Screens','Complete 10 screens'], trophy_25:['25 Screens','Complete 25 screens'], trophy_50:['50 Screens','Complete 50 screens'], trophy_100:['100 Screens','Complete 100 screens'], trophy_streak3:['Streak 3','Win 3 screens in a row'], trophy_streak5:['Streak 5','Win 5 screens in a row'], trophy_streak8:['Streak 8','Win 8 screens in a row'], trophy_level4:['Level 4','Reach the Hard screen (4)'], trophy_level6:['Level 6','Reach the Nightmare screen (6)'], trophy_level8:['Level 8','Reach the Legend screen (8)'], trophy_bank500:['Savings','Accumulate 500 coins in the bank'], trophy_bank2500:['Fortune','Accumulate 2,500 coins in the bank'], trophy_bank5000:['Treasure','Accumulate 5,000 coins in the bank'], trophy_first_bomb:['Spark!','Take your first shock'], trophy_20bombs:['High Voltage','Take 20 shocks'], trophy_no_memo:['Pure Memory','Win a screen without using MEMO'], trophy_no_ones:['Efficiency','Win a screen without revealing any 1s'], trophy_mult40:['Multi ×40','Reach a ×40 multiplier'], trophy_mult100:['Multi ×100','Reach a ×100 multiplier'], trophy_shield:['Shield','Win a screen after using the shield'], trophy_rendirse100:['Wise Retreat','Cash out with ≥100 run coins'], trophy_all_medals:['Collector','Collect all showcase medals'], trophy_1start:['From Zero','Win starting with a ×1 multiplier'], trophy_2start:['Good Start','Win starting with a ×2 multiplier'], trophy_3start:['Perfect Start','Win starting with a ×3 multiplier'], trophy_all_trophies:['Shock Flip Master','Collect all trophies'] };
+function trophyName(trophy) { return state.language === 'en' ? (TROPHY_EN[trophy.id]?.[0] || trophy.name) : trophy.name; }
+function trophyDescription(trophy) { return state.language === 'en' ? (TROPHY_EN[trophy.id]?.[1] || trophy.desc) : trophy.desc; }
+
+
+const TRANSLATIONS = {
+  es: { options:'OPCIONES', sound:'Sonido', soundDesc:'Efectos de sonido del juego.', music:'Música', musicDesc:'Música de fondo. Se reproducen melodías distintas en menú y partida.', haptics:'Vibración', hapticsDesc:'Respuesta háptica al revelar casillas, sufrir shocks y ganar.', theme:'Tema', themeDesc:'Oscuro, claro o automático (sigue el sistema).', language:'Idioma', languageDesc:'Elige el idioma de la interfaz.', reset:'Reiniciar progreso', back:'← VOLVER', enabled:'Activado', disabled:'Desactivado', active:'Activada', muted:'Silenciada', dark:'Oscuro', light:'Claro', auto:'Auto', bank:'BANCO', trophies:'TROFEOS', play:'JUGAR', workshop:'TALLER', howToPlay:'CÓMO JUGAR', level:'NIVEL', run:'PARTIDA', multi:'MULT', memo:'MEMO', cashOut:'RENDIRSE', exit:'SALIR', gameplayMusic:'Música de partida', boardThemes:'Temas de tablero', cardBacks:'Dorsos de carta', boardSize:'Tamaño de tablero', antiShock:'Aislante anti-shock', showcaseMedals:'Medallas de vitrina', calm:'tranquila', upbeat:'animada', ambient:'ambiental', progressive:'progresiva', previewHint:'Elige la música de tus partidas. Escucharás una previa de 3 segundos al seleccionar una pista.', quickBoards:'4×4 partidas rápidas, 6×6 más estratégico. El cambio se aplica al iniciar una nueva partida.', equipped:'EQUIPADO', lockedScreen:'Pantalla 8', boardCompact:'Compacto', boardNormal:'Normal', boardLarge:'Grande', buyShield:'Comprar aislante', shieldHint:'Protege del próximo shock. Ármalo en partida y se consume automáticamente.', next:'Próxima', allMedals:'¡Has conseguido todas las medallas!', missingCoins:'Te faltan', buyReady:'¡Ya puedes comprar la', missingMedal:'para desbloquear la siguiente medalla.', trophyLocked:'Bloqueado', insufficientCoins:'No tienes monedas suficientes para comprar un aislante.' },
+  en: { options:'OPTIONS', sound:'Sound', soundDesc:'Game sound effects.', music:'Music', musicDesc:'Background music with separate menu and gameplay tracks.', haptics:'Vibration', hapticsDesc:'Haptic feedback when revealing cells, shocks and wins.', theme:'Theme', themeDesc:'Dark, light or automatic (follows the system).', language:'Language', languageDesc:'Choose the interface language.', reset:'Reset progress', back:'← BACK', enabled:'Enabled', disabled:'Disabled', active:'Enabled', muted:'Muted', dark:'Dark', light:'Light', auto:'Auto', bank:'BANK', trophies:'TROPHIES', play:'PLAY', workshop:'WORKSHOP', howToPlay:'HOW TO PLAY', level:'LEVEL', run:'RUN', multi:'MULTI', memo:'MEMO', cashOut:'CASH OUT', exit:'EXIT', gameplayMusic:'Gameplay music', boardThemes:'Board themes', cardBacks:'Card backs', boardSize:'Board size', antiShock:'Anti-shock shield', showcaseMedals:'Showcase medals', calm:'calm', upbeat:'upbeat', ambient:'ambient', progressive:'progressive', previewHint:'Choose your gameplay music. A 3-second preview plays when you select a track.', quickBoards:'4×4 is fast-paced; 6×6 is more strategic. The change applies when starting a new game.', equipped:'EQUIPPED', lockedScreen:'Level 8', boardCompact:'Compact', boardNormal:'Normal', boardLarge:'Large', buyShield:'Buy shield', shieldHint:'Protects you from the next shock. Arm it during gameplay; it is consumed automatically.', next:'Next', allMedals:'You have collected all medals!', missingCoins:'You need', buyReady:'You can now buy the', missingMedal:'to unlock the next medal.', trophyLocked:'Locked', insufficientCoins:'Not enough coins to buy a shield.' },
+};
+function t(key) { return TRANSLATIONS[state.language]?.[key] || TRANSLATIONS.es[key] || key; }
+function localizeText(es, en) { return state.language === 'en' ? en : es; }
+
+function applyLanguage() {
+  document.documentElement.lang = state.language;
+  const guide = { es: { eyebrow:'GUÍA RÁPIDA', title:'CÓMO JUGAR', lead:'Piensa antes de pulsar. Cada casilla puede acercarte al premio… o cortar tu racha.', objective:'Tu objetivo', objectiveDesc:'Revela todos los 2 y 3 del tablero. Los 1 son seguros y no es necesario descubrirlos.', shockRule:'Evita los núcleos eléctricos: un SHOCK termina la ronda.', hints:'Lee las pistas', hintsDesc:'Cada fila y columna indica su MULTI y cuántos SHOCKS contiene.', score:'Construye tu puntuación', scoreDesc:'El primer número fija la base. Después, los 2 y 3 multiplican; los 1 no cambian el resultado.', memoTitle:'Usa MEMO', memoDesc:'Actívalo para anotar sin revelar. Ciclo: SHOCK → 1 → 2 → 3 → limpiar.', memoHint:'Clic derecho o pulsación larga elimina la marca.', shieldTitle:'Protege la racha', shieldDesc:'Arma el aislante antes de arriesgarte. Neutraliza el próximo SHOCK y se consume al usarlo.', advanceTitle:'Avanza o cobra', advanceDesc:'Supera las 8 pantallas seguidas para completar la partida. Puedes cobrar después de la primera; continuar aumenta la recompensa, pero un SHOCK borra las monedas de la partida.', shortcuts:'ATAJOS', backMenu:'VOLVER AL MENÚ' }, en: { eyebrow:'QUICK GUIDE', title:'HOW TO PLAY', lead:'Think before you tap. Each cell can bring you closer to the reward… or end your run.', objective:'Your objective', objectiveDesc:'Reveal every 2 and 3 on the board. 1s are safe and do not need to be revealed.', shockRule:'Avoid the electric cores: a SHOCK ends the run.', hints:'Read the clues', hintsDesc:'Each row and column shows its MULTI and how many SHOCKS it contains.', score:'Build your score', scoreDesc:'The first number sets the base. Then 2s and 3s multiply it; 1s do not change the result.', memoTitle:'Use MEMO', memoDesc:'Turn it on to take notes without revealing a cell. Cycle: SHOCK → 1 → 2 → 3 → clear.', memoHint:'Right-click or long-press to remove a mark.', shieldTitle:'Protect your run', shieldDesc:'Arm the shield before taking a risk. It neutralizes the next SHOCK and is consumed when used.', advanceTitle:'Advance or cash out', advanceDesc:'Clear all 8 screens to complete the run. You can cash out after the first; continuing increases the reward, but a SHOCK wipes your run coins.', shortcuts:'SHORTCUTS', backMenu:'BACK TO MENU' } }[state.language];
+  document.querySelectorAll('[data-i18n-guide]').forEach(el => { const value = guide?.[el.dataset.i18nGuide]; if (value) el.textContent = value; });
+  const root = document.querySelector('[data-i18n-root]');
+  if (root) root.dataset.language = state.language;
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.dataset.i18n;
+    const icon = el.dataset.i18nIcon || '';
+    el.dataset.i18nIcon = icon;
+    el.textContent = icon ? `${icon} ${t(key)}` : t(key);
+  });
+  renderOptions();
+}
+
+function setLanguage(language) {
+  state.language = language === 'en' ? 'en' : 'es';
+  saveLanguage(state.language);
+  applyLanguage();
+  Audio.sfx('click');
+}
+
 function renderOptions() {
   // Botón de sonido
   const soundBtn = document.getElementById('opt-sound');
   if (soundBtn) {
-    soundBtn.textContent = state.soundOn ? '🔊 Activado' : '🔇 Silenciado';
+    soundBtn.textContent = state.soundOn ? `🔊 ${t('enabled')}` : `🔇 ${t('disabled')}`;
     soundBtn.className = 'btn toggle-btn' + (state.soundOn ? ' toggle-on' : ' toggle-off');
     soundBtn.onclick = () => toggleSound();
   }
@@ -1138,7 +1182,7 @@ function renderOptions() {
   // Botón de música
   const musicBtn = document.getElementById('opt-music');
   if (musicBtn) {
-    musicBtn.textContent = state.musicOn ? '🎵 Activada' : '🔕 Silenciada';
+    musicBtn.textContent = state.musicOn ? `🎵 ${t('active')}` : `🔕 ${t('muted')}`;
     musicBtn.className = 'btn toggle-btn' + (state.musicOn ? ' toggle-on' : ' toggle-off');
     musicBtn.onclick = () => {
       state.musicOn = !state.musicOn;
@@ -1151,7 +1195,7 @@ function renderOptions() {
   // Botón de vibración
   const hapticsBtn = document.getElementById('opt-haptics');
   if (hapticsBtn) {
-    hapticsBtn.textContent = state.hapticsOn ? '📳 Activada' : '🚫 Desactivada';
+    hapticsBtn.textContent = state.hapticsOn ? `📳 ${t('active')}` : `🚫 ${t('disabled')}`;
     hapticsBtn.className = 'btn toggle-btn' + (state.hapticsOn ? ' toggle-on' : ' toggle-off');
     hapticsBtn.onclick = () => toggleHaptics();
   }
@@ -1159,17 +1203,17 @@ function renderOptions() {
   // Reinicio protegido: primera pulsación pide confirmación; la segunda confirma.
   const resetBtn = document.getElementById('opt-reset-progress');
   if (resetBtn) {
-    resetBtn.textContent = resetBtn.dataset.confirm === 'true' ? '¿SEGURO?' : 'REINICIAR PROGRESO';
+    resetBtn.textContent = resetBtn.dataset.confirm === 'true' ? (state.language === 'en' ? 'ARE YOU SURE?' : '¿SEGURO?') : t('reset');
     resetBtn.className = 'btn danger-btn' + (resetBtn.dataset.confirm === 'true' ? ' confirm-stage' : '');
     resetBtn.onclick = () => {
       if (resetBtn.dataset.confirm !== 'true') {
         resetBtn.dataset.confirm = 'true';
-        resetBtn.textContent = '¿SEGURO?';
+        resetBtn.textContent = state.language === 'en' ? 'ARE YOU SURE?' : '¿SEGURO?';
         resetBtn.classList.add('confirm-stage');
         clearTimeout(resetBtn._confirmTimer);
         resetBtn._confirmTimer = setTimeout(() => {
           resetBtn.dataset.confirm = 'false';
-          resetBtn.textContent = 'REINICIAR PROGRESO';
+          resetBtn.textContent = t('reset');
           resetBtn.classList.remove('confirm-stage');
         }, 3000);
         return;
@@ -1183,12 +1227,21 @@ function renderOptions() {
   // Botones de tema
   document.querySelectorAll('.theme-opt-btn').forEach(btn => {
     const mode = btn.dataset.themeMode;
+    const labels = { dark: t('dark'), light: t('light'), auto: t('auto') };
+    const icon = { dark: '🌙', light: '☀️', auto: '🅰️' }[mode];
+    btn.textContent = `${icon} ${labels[mode]}`;
     const isActive = state.themeMode === mode;
     btn.classList.toggle('theme-active', isActive);
     if (isActive) btn.classList.add('primary');
     else btn.classList.remove('primary');
   });
 
+  document.querySelectorAll('.language-opt-btn').forEach(btn => {
+    const active = btn.dataset.language === state.language;
+    btn.classList.toggle('theme-active', active);
+    btn.classList.toggle('primary', active);
+    btn.onclick = () => setLanguage(btn.dataset.language);
+  });
   updateSoundBtn();
 }
 
@@ -1229,12 +1282,30 @@ function showWorkshop() {
   showScreen('workshop');
 }
 
+let shopNoticeTimer;
+function showShopNotice(message) {
+  let notice = document.getElementById('shop-notice');
+  if (!notice) {
+    notice = document.createElement('div');
+    notice.id = 'shop-notice';
+    notice.className = 'shop-notice';
+    notice.setAttribute('role', 'alert');
+    document.body.appendChild(notice);
+  }
+  notice.textContent = message;
+  notice.classList.remove('visible');
+  void notice.offsetWidth;
+  notice.classList.add('visible');
+  clearTimeout(shopNoticeTimer);
+  shopNoticeTimer = setTimeout(() => notice.classList.remove('visible'), 3000);
+}
+
 function renderWorkshop() {
   if (!dom.workshopContent) return;
   state.bankCoins = loadCoins();
   state.collection = loadCollection();
   if (dom.workshopBank) dom.workshopBank.innerHTML = `<span class="coins-icon">🪙</span> ${state.bankCoins}`;
-  if (dom.workshopTitle) dom.workshopTitle.textContent = 'TALLER';
+  if (dom.workshopTitle) dom.workshopTitle.textContent = t('workshop');
 
   const themeId = state.collection.theme || 'taller';
   const skinId = state.collection.skin || 'clasico';
@@ -1242,97 +1313,81 @@ function renderWorkshop() {
   const sections = [];
 
   // 7.1 Música de partida
-  sections.push(`<div class="shop-section"><h3>🎵 Música de partida</h3>`);
+  sections.push(`<div class="shop-section"><h3>🎵 ${t('gameplayMusic')}</h3>`);
   sections.push(`<div class="shop-grid-2">`);
   for (const [id, t] of Object.entries(Audio.TRACKS)) {
     const active = Audio.getTrack() === id;
-    sections.push(`<button class="shop-btn ${active ? 'equipped' : ''}" data-action="music" data-id="${id}">${active ? '▶ ' : ''}${t.name}<small class="track-mood">${id === 'track1' ? 'tranquila' : id === 'track2' ? 'animada' : id === 'track3' ? 'ambiental' : 'progresiva'}</small></button>`);
+    const mood = id === 'track1' ? TRANSLATIONS[state.language].calm : id === 'track2' ? TRANSLATIONS[state.language].upbeat : id === 'track3' ? TRANSLATIONS[state.language].ambient : TRANSLATIONS[state.language].progressive;
+    sections.push(`<button class="shop-btn ${active ? 'equipped' : ''}" data-action="music" data-id="${id}">${active ? '▶ ' : ''}${t.name}<small class="track-mood">${mood}</small></button>`);
   }
-  sections.push(`</div><p class="shop-hint">Elige la música de tus partidas. Escucharás una previa de 3 segundos al seleccionar una pista.</p></div>`);
+  sections.push(`</div><p class="shop-hint">${t('previewHint')}</p></div>`);
 
   // 7.2 Temas de tablero
-  sections.push(`<div class="shop-section"><h3>🎨 Temas de tablero</h3>`);
+  sections.push(`<div class="shop-section"><h3>🎨 ${t('boardThemes')}</h3>`);
   for (const [id, theme] of Object.entries(THEMES)) {
     const unlocked = theme.locked ? isUnlocked(state.collection, theme) : true;
     const equipped = themeId === id;
     sections.push(`<button class="shop-btn ${equipped ? 'equipped' : ''} ${!unlocked ? 'locked' : ''}"
       data-action="equip-theme" data-id="${id}"
       ${!unlocked ? 'disabled' : ''}>
-      ${equipped ? '✓ ' : ''}${theme.name}${!unlocked ? ' 🔒 (Pantalla 8)' : ''}
+      ${equipped ? '✓ ' : ''}${itemText(id, theme.name)}${!unlocked ? ` 🔒 (${t('lockedScreen')})` : ''}
     </button>`);
   }
   sections.push(`</div>`);
 
   // 7.3 Dorsos
-  sections.push(`<div class="shop-section"><h3>🃏 Dorsos de carta</h3>`);
+  sections.push(`<div class="shop-section"><h3>🃏 ${t('cardBacks')}</h3>`);
   for (const [id, skin] of Object.entries(SKINS)) {
     const unlocked = skin.locked ? isUnlocked(state.collection, skin) : true;
     const equipped = skinId === id;
     sections.push(`<button class="shop-btn ${equipped ? 'equipped' : ''} ${!unlocked ? 'locked' : ''}"
       data-action="equip-skin" data-id="${id}"
       ${!unlocked ? 'disabled' : ''}>
-      ${equipped ? '✓ ' : ''}${skin.name}${!unlocked ? ' 🔒 (Pantalla 8)' : ''}
+      ${equipped ? '✓ ' : ''}${itemText(id, skin.name)}${!unlocked ? ` 🔒 (${t('lockedScreen')})` : ''}
     </button>`);
   }
   sections.push(`</div>`);
 
   // 7.4 Tamaño de tablero
   const currentSize = state.boardSize || DEFAULT_BOARD_SIZE;
-  sections.push(`<div class="shop-section"><h3>📐 Tamaño de tablero</h3>`);
+  sections.push(`<div class="shop-section"><h3>📐 ${t('boardSize')}</h3>`);
   for (const sz of BOARD_SIZES) {
     const equipped = currentSize === sz.id;
     sections.push(`<button class="shop-btn ${equipped ? 'equipped' : ''}" data-action="board-size" data-id="${sz.id}">
-      ${equipped ? '✓ ' : ''}${sz.icon} — ${sz.name}
+      ${equipped ? '✓ ' : ''}${sz.icon} — ${state.language === 'en' ? ({4:t('boardCompact'),5:t('boardNormal'),6:t('boardLarge')}[sz.id]) : sz.name}
     </button>`);
   }
-  sections.push(`<p class="shop-hint">4×4 partidas rápidas, 6×6 más estratégico. El cambio se aplica al iniciar una nueva partida.</p></div>`);
+  sections.push(`<p class="shop-hint">${t('quickBoards')}</p></div>`);
 
   // 7.5 Aislante
-  sections.push(`<div class="shop-section"><h3>🛡️ Aislante anti-shock</h3>`);
-  sections.push(`<p class="shop-hint" style="font-style:normal;margin-top:0">Protege del próximo shock. Ármalo en partida y se consume automáticamente. Se regala 1 gratis cada ${SHIELDS_PER_FREE} pantallas completadas.</p>`);
-  sections.push(`<button class="shop-btn" data-action="buy-shield">🛡️ Comprar aislante (${SHIELD_COST} 🪙)</button>`);
+  sections.push(`<div class="shop-section"><h3>🛡️ ${t('antiShock')}</h3>`);
+  sections.push(`<p class="shop-hint" style="font-style:normal;margin-top:0">${t('shieldHint')} ${state.language === 'en' ? `You receive 1 free every ${SHIELDS_PER_FREE} completed screens.` : `Se regala 1 gratis cada ${SHIELDS_PER_FREE} pantallas completadas.`}</p>`);
+  sections.push(`<button class="shop-btn" data-action="buy-shield">🛡️ ${t('buyShield')} (${SHIELD_COST} 🪙)</button>`);
   sections.push(`</div>`);
 
   // 7.5 Medallas de vitrina
-  sections.push(`<div class="shop-section"><h3>🏅 Medallas de vitrina</h3>`);
-  // Barra de progreso hacia la siguiente medalla comprable
-  const ownedMedals = state.collection.owned || [];
-  const nextMedal = MEDALS.find(m => !ownedMedals.includes(m.id));
-  if (nextMedal) {
-    const pct = Math.max(0, Math.min(100, Math.round((state.bankCoins / nextMedal.cost) * 100)));
-    const tier = TROPHY_TIERS[nextMedal.tier] || TROPHY_TIERS.bronze;
-    const missing = Math.max(0, nextMedal.cost - state.bankCoins);
-    sections.push(`
-      <div class="medal-progress">
-        <div class="medal-progress-head">
-          <span class="medal-progress-label">Próxima: ${nextMedal.emoji} ${nextMedal.name}</span>
-          <span class="medal-progress-cost">${state.bankCoins} / ${nextMedal.cost} 🪙</span>
-        </div>
-        <div class="medal-progress-bar"><div class="medal-progress-fill tier-${nextMedal.tier}" style="width:${pct}%"></div></div>
-        <p class="shop-hint">${pct >= 100 ? `¡Ya puedes comprar la ${nextMedal.name.toLowerCase()}!` : `Te faltan ${missing} 🪙 para desbloquear la siguiente medalla.`}</p>
-      </div>`);
-  } else {
-    sections.push(`<p class="shop-hint">🎉 ¡Has conseguido todas las medallas!</p>`);
-  }
+  sections.push(`<div class="shop-section"><h3>🏅 ${t('showcaseMedals')}</h3>`);
   for (const m of MEDALS) {
     const owned = state.collection.owned && state.collection.owned.includes(m.id);
     const canBuy = state.bankCoins >= m.cost && !owned;
     const tier = TROPHY_TIERS[m.tier] || TROPHY_TIERS.bronze;
+    const tierLabel = state.language === 'en' ? (tier.labelEn || tier.label) : tier.label;
     sections.push(`<button class="shop-btn medal-btn tier-${m.tier} ${owned ? 'owned' : ''}"
       data-action="buy-medal" data-id="${m.id}"
       ${!canBuy && !owned ? 'disabled' : ''}>
-      ${owned ? '✓ ' : ''}${m.emoji} ${m.name} — ${m.cost}💰 <span class="medal-tier-label">${tier.label}</span>
+      ${owned ? '✓ ' : ''}${m.emoji} ${itemText(m.id, m.name)} — ${m.cost}💰 <span class="medal-tier-label">${tierLabel}</span>
     </button>`);
   }
   sections.push(`</div>`);
 
   // 7.6 Trofeos
-  sections.push(`<div class="shop-section"><h3>🏆 Trofeos</h3>`);
+  sections.push(`<div class="shop-section"><h3>🏆 ${t('trophies')}</h3>`);
   const trophies = state.collection.trophies || [];
   for (const t of TROPHIES) {
     const earned = trophies.includes(t.id);
     const tier = TROPHY_TIERS[t.tier] || TROPHY_TIERS.bronze;
-    sections.push(`<div class="trophy-item ${earned ? 'earned' : ''} tier-${t.tier}">${earned ? tier.icon : '🔒'} ${t.name} — ${t.desc}</div>`);
+    const tierLabel = state.language === 'en' ? (tier.labelEn || tier.label) : tier.label;
+    sections.push(`<div class="trophy-item ${earned ? 'earned' : ''} tier-${t.tier}">${earned ? tier.icon : '🔒'} ${trophyName(t)} — ${trophyDescription(t)} <small>${tierLabel}</small></div>`);
   }
   sections.push(`</div>`);
 
@@ -1383,6 +1438,8 @@ function renderWorkshop() {
             renderWorkshop();
           } else {
             Audio.sfx('deny');
+            renderWorkshop();
+            showShopNotice(`⚠️ ${t('insufficientCoins')}`);
           }
           break;
         case 'buy-medal':
@@ -1450,7 +1507,7 @@ function renderTrophies() {
       const count = id === 'all' ? total : TROPHIES.filter(t => t.tier === id).length;
       const active = trophyFilter === id;
       return `<button class="trophies-filter-btn tier-${id} ${active ? 'active' : ''}" data-filter="${id}" role="tab" aria-selected="${active}">
-        ${icon} ${label}<span class="filter-count">${count}</span>
+        ${icon} ${state.language === 'en' ? (id === 'all' ? 'All' : (TROPHY_TIERS[id]?.labelEn || label)) : label}<span class="filter-count">${count}</span>
       </button>`;
     }).join('');
 
@@ -1466,16 +1523,17 @@ function renderTrophies() {
   const cards = TROPHIES.map(t => {
     const has = earned.includes(t.id);
     const tier = TROPHY_TIERS[t.tier] || TROPHY_TIERS.bronze;
+    const tierLabel = state.language === 'en' ? (tier.labelEn || tier.label) : tier.label;
     const cls = has ? `earned tier-${t.tier}` : `locked tier-${t.tier}`;
     const icon = has ? tier.icon : '🔒';
     const filteredOut = trophyFilter !== 'all' && t.tier !== trophyFilter;
     return `<div class="trophy-card ${cls} ${filteredOut ? 'filtered-out' : ''}" data-tier="${t.tier}">
       <span class="trophy-card-icon">${icon}</span>
       <div class="trophy-card-body">
-        <span class="trophy-card-name">${t.name}</span>
-        <span class="trophy-card-desc">${t.desc}</span>
+        <span class="trophy-card-name">${state.language === 'en' ? trophyName(t) : t.name}</span>
+        <span class="trophy-card-desc">${state.language === 'en' ? trophyDescription(t) : t.desc}</span>
       </div>
-      <span class="trophy-card-tier">${tier.label}</span>
+      <span class="trophy-card-tier">${tierLabel}</span>
     </div>`;
   });
 
@@ -1519,14 +1577,14 @@ function showStats() {
     { label: 'Pantallas ganadas', value: s.screensWon, cls: '' },
     { label: 'Shocks sufridos', value: s.bombsHit, cls: 'dim' },
     { label: 'Mejor nivel', value: s.bestLevel > 0 ? `Nivel ${s.bestLevel}` : '—', cls: '' },
-    { label: 'Racha actual', value: s.streak, cls: 'amber' },
-    { label: 'Mejor racha', value: s.bestStreak, cls: 'amber' },
     { label: 'Partidas jugadas', value: s.gamesPlayed, cls: 'dim' },
     { label: 'Monedas ganadas', value: s.totalCoinsEarned, cls: '' },
     { label: 'Trofeos', value: `${trophies.length}/${TROPHIES.length}`, cls: 'amber' },
     { label: 'Medallas', value: `${medals.length}/7`, cls: '' },
   ];
 
+  const statLabels = state.language === 'en' ? ['Screens won', 'Shocks hit', 'Best level', 'Games played', 'Coins earned', 'Trophies', 'Medals'] : items.map(i => i.label);
+  if (state.language === 'en') items.forEach((i, index) => { i.label = statLabels[index]; if (i.label === 'Best level' && s.bestLevel > 0) i.value = `Level ${s.bestLevel}`; });
   dom.statsBody.innerHTML = items.map(i =>
     `<div class="stat-box${i.cls ? ' highlight' : ''}"><div class="stat-box-title">${i.label}</div><div class="stat-box-value${i.cls ? ' ' + i.cls : ''}">${i.value}</div></div>`
   ).join('');
